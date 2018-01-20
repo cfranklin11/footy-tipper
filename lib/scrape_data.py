@@ -1,11 +1,11 @@
 import os
 import sys
 from datetime import datetime
-import csv
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import numpy as np
+import clean_data
 
 
 DOMAIN = 'https://www.footywire.com'
@@ -74,6 +74,7 @@ async def main(project_path, page_args=PAGES):
     # (meaning it sometimes falls within first few days of October),
     # but let's keep the math simple and say a given season goes through October
     season_year = today.year if today.month > 10 else today.year - 1
+    page_data = []
 
     for page in PAGES:
         data = []
@@ -87,7 +88,7 @@ async def main(project_path, page_args=PAGES):
             async with aiohttp.ClientSession() as session:
                 data_div = await fetch_page_data(session, page_url, year)
 
-                if data_div is None:
+                if data_div is None or year < 2010:
                     break
 
                 if page == 'ft_match_list':
@@ -100,9 +101,9 @@ async def main(project_path, page_args=PAGES):
             # Add null cells, so all rows are same length for Pandas dataframe
             padded_data = [list(row) + [None] * (max_length - len(row)) for row in data]
 
-            with open(os.path.join(project_path, f'data/raw/{page}.csv'), 'w') as csv_file:
-                wr = csv.writer(csv_file)
-                wr.writerows(padded_data)
+            page_data.append({'name': page, 'data': padded_data})
+
+    return page_data
 
 
 if __name__ == '__main__':
@@ -113,4 +114,5 @@ if __name__ == '__main__':
     page_args = list(sys.argv[1:]) if len(sys.argv) > 1 else None
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(project_path, page_args=page_args))
+    data = loop.run_until_complete(main(project_path, page_args=page_args))
+    clean_data.main(data)
