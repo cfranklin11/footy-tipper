@@ -2,7 +2,8 @@ import os
 import sys
 from datetime import datetime
 import csv
-import requests
+import aiohttp
+import asyncio
 from bs4 import BeautifulSoup
 import numpy as np
 
@@ -59,37 +60,40 @@ def fixture_data(data_div, year):
     return [get_fixture_row(tr, year) for tr in data_table.find_all('tr')]
 
 
-def fetch_page_data(page_url, year):
-    response = requests.get(page_url, params={'year': str(year)})
+async def fetch_page_data(session, page_url, year):
+    async with session.get(page_url, params={'year': str(year)}) as response:
+        text = await response.text()
+        # Have to use html5lib, because default HTML parser wasn't working for this site
+        soup = BeautifulSoup(text, 'html5lib')
+        return soup.find('div', class_='datadiv')
 
-    # Have to use html5lib, because default HTML parser wasn't working for this site
-    soup = BeautifulSoup(response.text, 'html5lib')
-    return soup.find('div', class_='datadiv')
 
-
-def main(project_path, page_args=PAGES):
+async def main(project_path, page_args=PAGES):
     today = datetime.now()
     # AFL Grand Final seems to be on Saturday of last partial week of September
     # (meaning it sometimes falls within first few days of October),
     # but let's keep the math simple and say a given season goes through October
     season_year = today.year if today.month > 10 else today.year - 1
-    data = []
+
     for page in PAGES:
+        data = []
         page_url = f'{DOMAIN}{PATH}{page}'
+
         # Data for each season are on different pages, so looping back through years
         # until no data is returned.
         # NOTE: This can't be refactored, because we need to be able to break the loop
         # once a blank page is returned.
         for year in reversed(range(season_year + 1)):
-            data_div = fetch_page_data(page_url, year)
+            async with aiohttp.ClientSession() as session:
+                data_div = await fetch_page_data(session, page_url, year)
 
-            if data_div is None:
-                break
+                if data_div is None:
+                    break
 
-            if page == 'ft_match_list':
-                data.append(fixture_data(data_div, year))
-            elif page == 'afl_betting':
-                data.append(betting_data(data_div, year))
+                if page == 'ft_match_list':
+                    data.extend(fixture_data(data_div, year))
+                elif page == 'afl_betting':
+                    data.extend(betting_data(data_div, year))
 
         if len(data) > 0:
             max_length = len(max(data, key=len))
@@ -102,10 +106,11 @@ def main(project_path, page_args=PAGES):
 
 
 if __name__ == '__main__':
-    project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+    project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
     if project_path not in sys.path:
         sys.path.append(project_path)
 
     page_args = list(sys.argv[1:]) if len(sys.argv) > 1 else None
 
-    main(project_path, page_args=page_args)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(project_path, page_args=page_args))
