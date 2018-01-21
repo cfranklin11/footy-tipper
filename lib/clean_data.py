@@ -1,7 +1,8 @@
+import os
 import pandas as pd
 import numpy as np
 import dateutil
-import datetime
+from datetime import datetime
 import re
 
 
@@ -25,20 +26,37 @@ TEAM_TRANSLATION = {
     'Cats': 'Geelong',
     'Hawks': 'Hawthorn'
 }
+VENUE_TRANSLATION = {
+    'AAMI': 'AAMI Stadium',
+    'ANZ': 'ANZ Stadium',
+    'Adelaide': 'Adelaide Oval',
+    'Aurora': 'Aurora Stadium',
+    'Blacktown': 'Blacktown International',
+    'Blundstone': 'Blundstone Arena',
+    "Cazaly's": "Cazaly's Stadium",
+    'Domain': 'Domain Stadium',
+    'Etihad': 'Etihad Stadium',
+    'GMHBA': 'GMHBA Stadium',
+    'Gabba': 'Gabba',
+    'Jiangwan': 'Adelaide Arena at Jiangwan Stadium',
+    'MCG': 'MCG',
+    'Mars': 'Mars Stadium',
+    'Metricon': 'Metricon Stadium',
+    'SCG': 'SCG',
+    'Spotless': 'Spotless Stadium',
+    'StarTrack': 'Manuka Oval',
+    'TIO': 'TIO Stadium',
+    'UTAS': 'UTAS Stadium',
+    'Westpac': 'Westpac Stadium',
+    'TIO Traegar Park': 'TIO Stadium'
+}
+
 ROUND_REGEX = re.compile('(Round\s+\d\d?|(?:\w|\d)+\s+Final)')
-ROUND_NUMBER_REGEX = re.compile('(.*[Ff]inal.*|\d\d?)')
 MATCH_COL_NAMES = ['year', 'date', 'home_team', 'away_team', 'venue', 'result']
 MATCH_COL_INDICES = [0, 1, 2, 4, 5, 7]
 BETTING_COL_NAMES = ['year', 'date', 'venue', 'team', 'score', 'margin', 'win_odds',
                      'win_paid', 'point_spread']
 BETTING_COL_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
-
-def create_match_date(idx, date):
-    # Add a few seconds to match times to guarantee uniqueness,
-    # because some occur on the same day at the same time
-    delta = idx % 60
-    return (date + datetime.timedelta(0, delta))
 
 
 def get_season_round(df):
@@ -58,18 +76,14 @@ def get_away_score(df):
     return results.apply(lambda x: float(x[1]) if type(x) == list else None)
 
 
-def create_round_number(df):
-    return df['season_round'].str.extract(ROUND_NUMBER_REGEX, expand=False)
-
-
 def create_full_match_date(df):
     # year is a float, so we have to convert it to int, then str to concatenate
     # with the date string (date parser doesn't recognize years as floats)
-    full_date = (df['date'] + df['year'].astype(int).astype(str)).apply(dateutil.parser.parse)
-
-    # Add a few seconds to match times to guarantee uniqueness,
-    # because some occur on the same day at the same time
-    return [create_match_date(idx, match_date) for idx, match_date in enumerate(full_date)]
+    # We convert datetime to date, so match dates can be paired with betting data,
+    # which doesn't include match times.
+    return (df['date'] + df['year'].astype(int).astype(str)).apply(
+        dateutil.parser.parse
+    ).apply(datetime.date)
 
 
 def clean_match_data(data):
@@ -106,20 +120,20 @@ def clean_match_data(data):
     ).reset_index(
         drop=True
     ).assign(
-        round_number=create_round_number,
         # Save date parsing till the end to avoid ValueErrors
         full_date=create_full_match_date
+    ).drop(
+        ['year', 'date'], axis=1
+    )
+    df.loc[:, 'venue'] = df['venue'].apply(
+        lambda x: VENUE_TRANSLATION[x] if x in VENUE_TRANSLATION.keys() else x
     )
 
-    df.set_index('full_date', inplace=True)
-    df.to_csv('data/interim/match_data.csv')
+    return df
 
 
 def create_full_betting_date(df):
-    full_date = df['date'].apply(dateutil.parser.parse)
-    # Add a few seconds to match times to guarantee uniqueness,
-    # because some occur on the same day at the same time
-    return [create_match_date(idx, match_date) for idx, match_date in enumerate(full_date)]
+    return df['date'].apply(dateutil.parser.parse)
 
 
 def clean_betting_data(data):
@@ -137,7 +151,11 @@ def clean_betting_data(data):
 
     # Betting data table uses colspan="2" for date columns, making even dates blank
     df.loc[:, 'date'].fillna(method='ffill', inplace=True)
-    df.loc[:, 'venue'].fillna(method='ffill', inplace=True)
+    df.loc[:, 'venue'] = df['venue'].fillna(
+        method='ffill'
+    ).apply(
+        lambda x: VENUE_TRANSLATION[x] if x in VENUE_TRANSLATION.keys() else x
+    )
 
     # We need to do this in two steps because there's at least one case of the website's data table
     # being poorly organised, leading to specious duplicates.
@@ -152,18 +170,30 @@ def clean_betting_data(data):
     ).reset_index(
         drop=True,
     ).assign(
-        round_number=create_round_number,
         # Save date parsing till the end to avoid ValueErrors
         full_date=create_full_betting_date
+    ).drop(
+        ['year', 'date', 'score', 'win_paid', 'margin'], axis=1
     )
 
-    df.set_index('full_date', inplace=True)
-    df.to_csv('data/interim/betting_data.csv')
+    return df
 
 
-def main(data_list):
-    for data in data_list:
-        if data['name'] == 'ft_match_list':
-            clean_match_data(data['data'])
-        elif data['name'] == 'afl_betting.csv':
-            clean_betting_data(data['data'])
+def main(page, data, csv=False):
+    if page == 'ft_match_list':
+        df = clean_match_data(data)
+    elif page == 'afl_betting':
+        df = clean_betting_data(data)
+    else:
+        raise('Unknown page:', page)
+
+    if csv:
+        project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+        data_directory = os.path.join(project_path, 'data')
+
+        if not os.path.isdir(data_directory):
+            os.makedirs(data_directory)
+
+        df.to_csv(os.path.join(data_directory, f'{page}.csv'), index=False)
+
+    return df

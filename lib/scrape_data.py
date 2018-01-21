@@ -5,7 +5,12 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import numpy as np
-import clean_data
+
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+if project_path not in sys.path:
+    sys.path.append(project_path)
+
+from lib import clean_data
 
 
 DOMAIN = 'https://www.footywire.com'
@@ -68,7 +73,7 @@ async def fetch_page_data(session, page_url, year):
         return soup.find('div', class_='datadiv')
 
 
-async def main(project_path, page_args=PAGES):
+async def scrape_pages(project_path, page_args):
     today = datetime.now()
     # AFL Grand Final seems to be on Saturday of last partial week of September
     # (meaning it sometimes falls within first few days of October),
@@ -88,7 +93,7 @@ async def main(project_path, page_args=PAGES):
             async with aiohttp.ClientSession() as session:
                 data_div = await fetch_page_data(session, page_url, year)
 
-                if data_div is None or year < 2010:
+                if data_div is None:
                     break
 
                 if page == 'ft_match_list':
@@ -106,13 +111,15 @@ async def main(project_path, page_args=PAGES):
     return page_data
 
 
-if __name__ == '__main__':
-    project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-    if project_path not in sys.path:
-        sys.path.append(project_path)
-
-    page_args = list(sys.argv[1:]) if len(sys.argv) > 1 else None
-
+def main(project_path, page_args=PAGES):
     loop = asyncio.get_event_loop()
-    data = loop.run_until_complete(main(project_path, page_args=page_args))
-    clean_data.main(data)
+    data = loop.run_until_complete(scrape_pages(project_path, page_args))
+    return data
+
+
+if __name__ == '__main__':
+    page_args = list(sys.argv[1:]) if len(sys.argv) > 1 else None
+    data = main(project_path, page_args=page_args)
+
+    for table in data:
+        clean_data.main(table['name'], table['data'], csv=True)
