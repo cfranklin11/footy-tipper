@@ -5,35 +5,39 @@ class Match(db.Model):
     __tablename__ = 'matches'
 
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime())
+    date = db.Column(db.Date())
     season_round = db.Column(db.String())
-    home_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
-    home_team = db.relationship('Team', back_populates='home_matches')
-    away_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
-    away_team = db.relationship('Team', back_populates='away_matches')
     venue = db.Column(db.String())
-    crowd_size = db.Column(db.Integer)
     home_score = db.Column(db.Integer)
     away_score = db.Column(db.Integer)
-    betting_odds_id = db.Column(db.Integer, db.ForeignKey('betting_odds.id'))
-    betting_odds = db.relationship('BettingOdds', back_populates='match')
 
-    def __init__(self, date, season_round, home_team, away_team, venue,
-                 crowd_size, home_score, away_score):
-        self.date = date
-        self.season_round = season_round
-        self.home_team = home_team
-        self.away_team = away_team
-        self.venue = venue
-        self.crowd_size = crowd_size
-        self.home_score = home_score
-        self.away_score = away_score
+    home_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+    home_team = db.relationship(
+        'Team', back_populates='home_matches', foreign_keys='Match.home_team_id'
+    )
+    away_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+    away_team = db.relationship(
+        'Team', back_populates='away_matches', foreign_keys='Match.away_team_id'
+    )
+
+    home_betting_odds = db.relationship(
+        'BettingOdds',
+        back_populates='home_match',
+        uselist=False,
+        primaryjoin='Match.id==BettingOdds.home_match_id'
+    )
+    away_betting_odds = db.relationship(
+        'BettingOdds',
+        back_populates='away_match',
+        uselist=False,
+        primaryjoin='Match.id==BettingOdds.away_match_id'
+    )
 
     def __repr__(self):
         return (
-            f'<Match(date={self.date}, season_round={self.season_round}, home_team={self.home_team}, ' +
-            f'away_team={self.away_team}, venue={self.venue}, ' +
-            f'crowd_size={self.crowd_size}, home_score={self.crowd_size}, away_score={self.away_score})>'
+            f'<Match(date={self.date}, season_round={self.season_round}, ' +
+            f'home_team={self.home_team}, away_team={self.away_team}, venue={self.venue}, ' +
+            f'home_score={self.home_score}, away_score={self.away_score})>'
         )
 
 
@@ -41,24 +45,24 @@ class BettingOdds(db.Model):
     __tablename__ = 'betting_odds'
 
     id = db.Column(db.Integer, primary_key=True)
-    match = db.relationship('Match', back_populates='betting_odds', uselist=False)
-    home_win_odds = db.Column(db.Float())
-    away_win_odds = db.Column(db.Float())
-    home_point_spread = db.Column(db.Integer)
-    away_point_spread = db.Column(db.Integer)
+    win_odds = db.Column(db.Float())
+    point_spread = db.Column(db.Integer)
 
-    def __init__(self, home_win_odds, away_win_odds, home_point_spread, away_point_spread):
-        self.home_win_odds = home_win_odds
-        self.away_win_odds = away_win_odds
-        self.home_point_spread = home_point_spread
-        self.away_point_spread = away_point_spread
+    home_match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
+    home_match = db.relationship(
+        'Match', back_populates='home_betting_odds', foreign_keys='BettingOdds.home_match_id'
+    )
+    away_match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
+    away_match = db.relationship(
+        'Match', back_populates='away_betting_odds', foreign_keys='BettingOdds.away_match_id'
+    )
+
+    team = db.relationship('Team', back_populates='betting_odds')
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
 
     def __repr__(self):
-        return (
-            f'<BettingOdds(home_win_odds={self.home_win_odds}, ' +
-            f'away_win_odds={self.away_win_odds}, home_point_spread={self.home_point_spread}, ' +
-            f'away_point_spread{self.away_point_spread})>'
-        )
+        return (f'<BettingOdds(win_odds={self.win_odds}, point_spread={self.point_spread} ' +
+                f'home_match={self.home_match}, away_match={self.away_match}, team={self.team})>')
 
 
 class Team(db.Model):
@@ -66,11 +70,15 @@ class Team(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String())
-    home_matches = db.relationship('Match', back_populates='home_team')
-    away_matches = db.relationship('Match', back_populates='away_team')
 
-    def __init__(self, name):
-        self.name = name
+    home_matches = db.relationship(
+        'Match', back_populates='home_team', primaryjoin='Team.id==Match.home_team_id'
+    )
+    away_matches = db.relationship(
+        'Match', back_populates='away_team', primaryjoin='Team.id==Match.away_team_id'
+    )
+    betting_odds = db.relationship('BettingOdds', back_populates='team')
 
     def __repr__(self):
-        return f'<Team(name={self.name})>'
+        return (f'<Team(name={self.name}, home_matches={self.home_matches}, ' +
+                f'away_matches={self.away_matches}, betting_odds={self.betting_odds})>')

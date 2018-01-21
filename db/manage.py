@@ -1,11 +1,15 @@
 import os
+import sys
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
+
+directory = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+if directory not in sys.path:
+    sys.path.append(directory)
+
 from app.routes import app, db
 from app.models import Match, Team, BettingOdds
 
-
-directory = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 app.config['CSRF_ENABLED'] = True
 app.config.from_pyfile(os.path.join(directory, '.env'))
