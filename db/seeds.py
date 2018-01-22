@@ -12,41 +12,7 @@ from app.routes import app
 from app.models import Match, Team, BettingOdds
 
 
-def main():
-    engine = create_engine(app.config['DATABASE_URL'])
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    match_df = pd.read_csv(
-        os.path.join(project_path, 'data/ft_match_list.csv'),
-        parse_dates=['full_date'],
-        infer_datetime_format=True
-    )
-
-    team_names = match_df['home_team'].append(match_df['away_team']).drop_duplicates()
-    teams = [Team(name=team_name) for team_name in team_names]
-    session.add_all(teams)
-
-    saved_teams = session.query(Team).all()
-    match_records = match_df.to_dict('records')
-
-    for match_record in match_records:
-        match = {
-            'date': match_record['full_date'],
-            'season_round': match_record['season_round'],
-            'venue': match_record['venue'],
-            'home_score': match_record['home_score'],
-            'away_score': match_record['away_score'],
-            'home_team': next(
-                team for team in saved_teams if team.name == match_record['home_team']
-            ),
-            'away_team': next(
-                team for team in saved_teams if team.name == match_record['away_team']
-            )
-        }
-        session.add(Match(**match))
-
-    saved_matches = session.query(Match).all()
+def seed_betting_odds(session, teams, matches):
     betting_df = pd.read_csv(
         os.path.join(project_path, 'data/afl_betting.csv'),
         parse_dates=['full_date'],
@@ -56,10 +22,10 @@ def main():
 
     for betting_record in betting_records:
         betting_team = next(
-            team for team in saved_teams if team.name == betting_record['team']
+            team for team in teams if team.name == betting_record['team']
         )
         betting_match = next(
-            (match for match in saved_matches
+            (match for match in matches
                 if match.date == betting_record['full_date'].to_pydatetime() and
                 match.venue == betting_record['venue'])
         )
@@ -79,6 +45,55 @@ def main():
                   'team/match combinations')
 
         session.add(BettingOdds(**betting))
+
+
+def match_df():
+    pd.read_csv(
+        os.path.join(project_path, 'data/ft_match_list.csv'),
+        parse_dates=['full_date'],
+        infer_datetime_format=True
+    )
+
+
+def seed_matches(session, teams):
+    match_records = match_df().to_dict('records')
+
+    for match_record in match_records:
+        match = {
+            'date': match_record['full_date'],
+            'season_round': match_record['season_round'],
+            'venue': match_record['venue'],
+            'home_score': match_record['home_score'],
+            'away_score': match_record['away_score'],
+            'home_team': next(
+                team for team in teams if team.name == match_record['home_team']
+            ),
+            'away_team': next(
+                team for team in teams if team.name == match_record['away_team']
+            )
+        }
+        session.add(Match(**match))
+
+
+def seed_teams(session):
+    df = match_df()
+    team_names = df['home_team'].append(df['away_team']).drop_duplicates()
+    teams = [Team(name=team_name) for team_name in team_names]
+    session.add_all(teams)
+
+
+def main():
+    engine = create_engine(app.config['DATABASE_URL'])
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    seed_teams(session)
+    saved_teams = session.query(Team).all()
+
+    seed_matches(session, saved_teams)
+    saved_matches = session.query(Match).all()
+
+    seed_betting_odds(session, saved_teams, saved_matches)
 
     try:
         session.commit()
