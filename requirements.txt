@@ -1,6 +1,8 @@
 flask
 psycopg2
-Flask-SQLAlchemy
-Flask-Migrate
-Flask-Script
+flask_sqlalchemy
 autoenv
+numpy
+pandas
+bs4
+aiohttp

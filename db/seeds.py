@@ -48,7 +48,7 @@ def seed_betting_odds(session, teams, matches):
 
 
 def match_df():
-    pd.read_csv(
+    return pd.read_csv(
         os.path.join(project_path, 'data/ft_match_list.csv'),
         parse_dates=['full_date'],
         infer_datetime_format=True
