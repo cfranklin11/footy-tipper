@@ -72,12 +72,18 @@ class Team(db.Model):
     name = db.Column(db.String())
 
     home_matches = db.relationship(
-        'Match', back_populates='home_team', primaryjoin='Team.id==Match.home_team_id'
+        'Match',
+        back_populates='home_team',
+        primaryjoin='Team.id==Match.home_team_id',
+        lazy='noload'
     )
     away_matches = db.relationship(
-        'Match', back_populates='away_team', primaryjoin='Team.id==Match.away_team_id'
+        'Match',
+        back_populates='away_team',
+        primaryjoin='Team.id==Match.away_team_id',
+        lazy='noload'
     )
-    betting_odds = db.relationship('BettingOdds', back_populates='team')
+    betting_odds = db.relationship('BettingOdds', back_populates='team', lazy='noload')
 
     def __repr__(self):
         return (f'<Team(name={self.name}, home_matches={self.home_matches}, ' +

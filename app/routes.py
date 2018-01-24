@@ -12,7 +12,7 @@ db = SQLAlchemy(app)
 
 
 @app.route('/')
-def main():
+def home():
     return render_template('home.html')
 
 

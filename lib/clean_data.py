@@ -51,6 +51,9 @@ VENUE_TRANSLATION = {
     'TIO Traegar Park': 'TIO Stadium'
 }
 
+# Extract both regular season rounds and finals rounds
+# NOTE: Regex uses \s+, because I encountered a case where 'Qualifying' and 'Final'
+# had two spaces instead of one
 ROUND_REGEX = re.compile('(Round\s+\d\d?|(?:\w|\d)+\s+Final)')
 MATCH_COL_NAMES = ['year', 'date', 'home_team', 'away_team', 'venue', 'result']
 MATCH_COL_INDICES = [0, 1, 2, 4, 5, 7]
@@ -60,9 +63,6 @@ BETTING_COL_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 
 def get_season_round(df):
-    # Extract both regular season rounds and finals rounds
-    # NOTE: Regex uses \s+, because I encountered a case where 'Qualifying' and 'Final'
-    # had two spaces instead of one
     return df['date'].str.extract(ROUND_REGEX, expand=True)
 
 
