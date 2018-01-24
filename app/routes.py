@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, abort, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -14,6 +14,15 @@ db = SQLAlchemy(app)
 @app.route('/')
 def home():
     return render_template('home.html')
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    if request.args.get('password') == app.config['PASSWORD']:
+        # Run model.predict and return results
+        return jsonify({'predictions': [1, 0, 0, 1]})
+    else:
+        abort(401)
 
 
 if __name__ == '__main__':
