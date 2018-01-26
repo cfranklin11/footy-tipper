@@ -9,3 +9,5 @@ aiohttp
 sqlalchemy
 scikit-learn
 python-dotenv
+gunicorn
+scipy
