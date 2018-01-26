@@ -2,17 +2,29 @@ import os
 import sys
 from flask import Flask, render_template, abort, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
     sys.path.append(project_path)
 
+import config
+
 
 N_STEPS = 5
 
 app = Flask(__name__)
+
+if os.getenv('PRODUCTION'):
+    app.config.from_object(config.ProductionConfig)
+else:
+    app.config.from_object(config.DevelopmentConfig)
+    dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
+    load_dotenv(dotenv_path)
+
 app.config['CSRF_ENABLED'] = True
-app.config.from_pyfile('../.env')
+app.config['PASSWORD'] = os.environ.get('PASSWORD')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
