@@ -36,7 +36,3 @@ def predict():
         return jsonify(predictions)
     else:
         abort(401)
-
-
-if __name__ == '__main__':
-    app.run()
