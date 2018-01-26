@@ -1,6 +1,9 @@
 flask
 psycopg2
 flask_sqlalchemy
+flask_script
+flask_migrate
+sqlalchemy
 autoenv
 numpy
 pandas

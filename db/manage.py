@@ -11,11 +11,6 @@ from app.routes import app, db
 from app.models import Match, Team, BettingOdds
 
 
-app.config['CSRF_ENABLED'] = True
-app.config.from_pyfile(os.path.join(directory, '.env'))
-app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 migrate = Migrate(app, db)
 manager = Manager(app)
 
