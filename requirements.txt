@@ -6,3 +6,5 @@ numpy
 pandas
 bs4
 aiohttp
+sqlalchemy
+scikit-learn
