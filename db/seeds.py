@@ -1,6 +1,7 @@
 import sys
 import os
 import pandas as pd
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -59,20 +60,23 @@ def seed_matches(session, teams):
     match_records = match_df().to_dict('records')
 
     for match_record in match_records:
-        match = {
-            'date': match_record['full_date'],
-            'season_round': match_record['season_round'],
-            'venue': match_record['venue'],
-            'home_score': match_record['home_score'],
-            'away_score': match_record['away_score'],
-            'home_team': next(
-                team for team in teams if team.name == match_record['home_team']
-            ),
-            'away_team': next(
-                team for team in teams if team.name == match_record['away_team']
-            )
-        }
-        session.add(Match(**match))
+        # Heroku has 10K limit on DB records for the free tier,
+        #  so we have to limit how far back we go when saving match data.
+        if match_record['full_date'] > datetime(1985, 1, 1):
+            match = {
+                'date': match_record['full_date'],
+                'season_round': match_record['season_round'],
+                'venue': match_record['venue'],
+                'home_score': match_record['home_score'],
+                'away_score': match_record['away_score'],
+                'home_team': next(
+                    team for team in teams if team.name == match_record['home_team']
+                ),
+                'away_team': next(
+                    team for team in teams if team.name == match_record['away_team']
+                )
+            }
+            session.add(Match(**match))
 
 
 def seed_teams(session):
