@@ -90,7 +90,7 @@ async def scrape_pages(project_path, page_args):
         # NOTE: This can't be refactored, because we need to be able to break the loop
         # once a blank page is returned.
         for year in reversed(range(season_year + 1)):
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
                 data_div = await fetch_page_data(session, page_url, year)
 
                 if data_div is None:

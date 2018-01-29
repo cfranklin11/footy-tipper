@@ -16,7 +16,13 @@ from app.models import Match
 from lib.model.preprocessing import TimeStepDFCreator
 
 ROW_INDEXES = ['team', 'year', 'round_number']
-DIGITS = re.compile('\d\d?$')
+DIGITS = re.compile('^\d+$')
+QUALIFYING = re.compile('qualifying', flags=re.I)
+ELIMINATION = re.compile('elimination', flags=re.I)
+SEMI = re.compile('semi', flags=re.I)
+PRELIMINARY = re.compile('preliminary', flags=re.I)
+GRAND = re.compile('grand', flags=re.I)
+MAX_REG_ROUND = 24
 
 
 class MatchData():
@@ -53,6 +59,7 @@ class MatchData():
             'team': [],
             'oppo_team': [],
             'home_team': [],
+            'venue': [],
             'score': [],
             'oppo_score': [],
             'win_odds': [],
@@ -60,16 +67,11 @@ class MatchData():
         }
 
         for match in data:
-            # Skipping finals rounds to keep data simple & consistent
-            if DIGITS.search(match.season_round) is None:
-                continue
-
-            round_number = int(DIGITS.search(match.season_round)[0])
-
             df_dict['year'].extend([match.date.year, match.date.year])
-            df_dict['round_number'].extend([round_number, round_number])
+            df_dict['season_round'].extend([match.season_round, match.season_round])
             df_dict['team'].extend([match.home_team.name, match.away_team.name])
             df_dict['oppo_team'].extend([match.away_team.name, match.home_team.name])
+            df_dict['venue'].extend([match.venue, match.venue])
             df_dict['home_team'].extend([1, 0])
             df_dict['score'].extend([match.home_score, match.away_score])
             df_dict['oppo_score'].extend([match.away_score, match.home_score])
@@ -92,6 +94,29 @@ class MatchData():
         ].dropna(
         ).assign(
             win=(df['score'] > df['oppo_score']).astype(int)
+        )
+
+        match_df.loc[:, 'round_number'] = match_df['season_round'].apply(self.__get_round_number)
+        # Create finals category features per furthest round reached the previous year
+        last_finals_reached = pd.DataFrame(
+            match_df['round_number'].groupby(
+                level=[0, 1]
+            ).apply(
+                lambda x: max(max(x) - MAX_REG_ROUND, 0)
+            ).groupby(
+                level=[0]
+            ).shift(
+            ).fillna(
+                0
+            ).rename(
+                'last_finals_reached'
+            )
+        ).reset_index()
+
+        match_df = match_df.merge(
+            last_finals_reached, on=['team', 'year'], how='left'
+        ).set_index(
+            ROW_INDEXES, drop=False
         ).unstack(
             # Unstack year & round_number, fill, restack, then repeat with team & year to
             # make teams, years, and round_numbers consistent for all possible cross-sections
@@ -109,6 +134,8 @@ class MatchData():
             ROW_INDEXES[:2]
         ).reorder_levels(
             [1, 2, 0]
+        ).drop(
+            'season_round', axis=1
         ).sort_index()
 
         # Convert 0s in category columns to strings for later transformations
@@ -122,7 +149,23 @@ class MatchData():
             1, 0
         )
 
-        return match_df.sort_index()
+        return match_df[match_df['round_number'] <= MAX_REG_ROUND].sort_index()
+
+    def __get_round_number(x):
+        if DIGITS.search(x) is not None:
+            return int(x)
+        if QUALIFYING.search(x) is not None:
+            return 25
+        if ELIMINATION.search(x) is not None:
+            return 25
+        if SEMI.search(x) is not None:
+            return 26
+        if PRELIMINARY.search(x) is not None:
+            return 27
+        if GRAND.search(x) is not None:
+            return 28
+
+        raise Exception("Round label doesn't match any known patterns")
 
 
 class ModelData():

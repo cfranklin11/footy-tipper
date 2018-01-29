@@ -54,7 +54,7 @@ VENUE_TRANSLATION = {
 # Extract both regular season rounds and finals rounds
 # NOTE: Regex uses \s+, because I encountered a case where 'Qualifying' and 'Final'
 # had two spaces instead of one
-ROUND_REGEX = re.compile('(Round\s+\d\d?|(?:\w|\d)+\s+Final)')
+ROUND_REGEX = re.compile('(round\s+\d\d?|.*final.*)', flags=re.I)
 MATCH_COL_NAMES = ['year', 'date', 'home_team', 'away_team', 'venue', 'result']
 MATCH_COL_INDICES = [0, 1, 2, 4, 5, 7]
 BETTING_COL_NAMES = ['year', 'date', 'venue', 'team', 'score', 'margin', 'win_odds',
@@ -68,12 +68,12 @@ def get_season_round(df):
 
 def get_home_score(df):
     results = df['result'].str.split('-')
-    return results.apply(lambda x: float(x[0]) if type(x) == list else None)
+    return results.apply(lambda x: float(x[0]) if type(x) == list and len(x) == 2 else None)
 
 
 def get_away_score(df):
     results = df['result'].str.split('-')
-    return results.apply(lambda x: float(x[1]) if type(x) == list else None)
+    return results.apply(lambda x: float(x[1]) if type(x) == list and len(x) == 2 else None)
 
 
 def create_full_match_date(df):
@@ -83,7 +83,9 @@ def create_full_match_date(df):
     # which doesn't include match times.
     return (df['date'] + df['year'].astype(int).astype(str)).apply(
         dateutil.parser.parse
-    ).apply(datetime.date)
+    ).apply(
+        datetime.date
+    )
 
 
 def clean_match_data(data):
@@ -132,10 +134,6 @@ def clean_match_data(data):
     return df
 
 
-def create_full_betting_date(df):
-    return df['date'].apply(dateutil.parser.parse)
-
-
 def clean_betting_data(data):
     # Ignore useless columns that are result of BeautifulSoup table parsing
     df = pd.DataFrame(data).iloc[:, BETTING_COL_INDICES]
@@ -171,7 +169,7 @@ def clean_betting_data(data):
         drop=True,
     ).assign(
         # Save date parsing till the end to avoid ValueErrors
-        full_date=create_full_betting_date
+        full_date=lambda x: x['date'].apply(dateutil.parser.parse)
     ).drop(
         ['year', 'date', 'score', 'win_paid', 'margin'], axis=1
     )
@@ -185,7 +183,7 @@ def main(page, data, csv=False):
     elif page == 'afl_betting':
         df = clean_betting_data(data)
     else:
-        raise('Unknown page:', page)
+        raise Exception(f'Unknown page: {page}')
 
     if csv:
         project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
