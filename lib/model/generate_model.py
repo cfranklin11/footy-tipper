@@ -9,7 +9,7 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')
 if project_path not in sys.path:
     sys.path.append(project_path)
 
-from app.middleware.ml_model import MatchData
+from app.middleware.ml_model import MatchData, CSVData
 from lib.model.preprocessing import (
     CumulativeFeatureBuilder,
     CategoryEncoder,
@@ -18,9 +18,11 @@ from lib.model.preprocessing import (
 )
 from lib.model.model_data import create_model_data_sets
 
-CATEGORY_REGEX = '^(?:oppo_)?(?:team)'
+CATEGORY_REGEX = '^(?:oppo_)?team|venue|last_finals_reached'
 N_STEPS = 5
-TRAIN_START = 2012
+TRAIN_START = 1966
+# TODO: Keeping out a test year is only for developing prediction workflow.
+# Final version will train on all available data.
 TEST_YEAR = 2017
 PARAMS = {
     'max_features': 0.967635,
@@ -32,7 +34,10 @@ PARAMS = {
 
 
 def main(db_url):
-    df = MatchData(db_url).data()
+    db_df = MatchData(db_url).data()
+    min_year = db_df['year'].min()
+    csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
+    df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
 
     numeric_pipeline = make_pipeline(ColumnFilter(exclude=CATEGORY_REGEX), StandardScaler())
     combined_features = make_union(
@@ -41,11 +46,12 @@ def main(db_url):
     )
 
     X_train, _, y_train, _ = create_model_data_sets(
-        df, n_steps=N_STEPS, train_start=TRAIN_START, test_years=(TEST_YEAR, TEST_YEAR)
+        df, n_steps=N_STEPS, train_start=TRAIN_START, test_years=(TEST_YEAR, 2017)
     )
+
     X_pipeline = make_pipeline(
         CumulativeFeatureBuilder(),
-        CategoryEncoder(columns=['team', 'oppo_team']),
+        CategoryEncoder(columns=['team', 'oppo_team', 'venue']),
         TimeStepDFCreator(n_steps=N_STEPS),
         combined_features
     )
