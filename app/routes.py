@@ -38,11 +38,10 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    from app.middleware.ml_model import MatchData, ModelData, MLModel
+    from app.middleware.ml_model import ModelData, MLModel
 
     if request.args.get('password') == app.config['PASSWORD']:
-        raw_data = MatchData(app.config['DATABASE_URL']).data()
-        X, y = ModelData(N_STEPS).data(raw_data)
+        X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
         predictions = MLModel(N_STEPS).predict(X, y)
 
         return jsonify(predictions)

@@ -9,7 +9,7 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')
 if project_path not in sys.path:
     sys.path.append(project_path)
 
-from app.middleware.ml_model import MatchData, CSVData
+from app.middleware.ml_model import ModelData
 from lib.model.preprocessing import (
     CumulativeFeatureBuilder,
     CategoryEncoder,
@@ -34,10 +34,7 @@ PARAMS = {
 
 
 def main(db_url):
-    db_df = MatchData(db_url).data()
-    min_year = db_df['year'].min()
-    csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
-    df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
+    df = ModelData(db_url, N_STEPS, train=True).data()
 
     numeric_pipeline = make_pipeline(ColumnFilter(exclude=CATEGORY_REGEX), StandardScaler())
     combined_features = make_union(

@@ -108,7 +108,6 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
             [self.__create_team_df(X, team) for team in unique_teams],
             axis=0
         )
-
         elo_df = self.__create_elo_df(team_df)
 
         return pd.concat([team_df, elo_df], axis=1)

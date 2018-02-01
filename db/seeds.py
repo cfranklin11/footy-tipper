@@ -13,7 +13,7 @@ from app.routes import app
 from app.models import Match, Team, BettingOdds
 
 
-MIN_YEAR = 1990
+MIN_YEAR = 2000
 
 
 def seed_betting_odds(session, teams, matches):
