@@ -93,7 +93,7 @@ def clean_match_data(data):
     df = pd.DataFrame(data).iloc[:, MATCH_COL_INDICES]
     df.columns = MATCH_COL_NAMES
 
-    df = df.assign(season_round=get_season_round, inplace=True)
+    df = df.assign(season_round=get_season_round)
     df.loc[:, 'home_team'] = df['home_team'].apply(
         lambda x: np.nan if x in ['BYE', 'MATCH CANCELLED'] else x
     )

@@ -275,6 +275,7 @@ class ModelData():
 
         # Filling missing rounds to make sure all segments are the same shape
         # can lead to the current round being blank. We want to predict on the latest real round.
+        # (All real matches should have a venue)
         blank_count = 0
         for round_number in unique_rounds[::-1]:
             round_venues = df.xs([max_year, round_number], level=[1, 2])['venue']
