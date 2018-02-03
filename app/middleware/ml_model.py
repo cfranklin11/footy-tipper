@@ -303,7 +303,7 @@ class ModelData():
 
         # Pad with earlier rounds per n_steps, so reshaping per time steps will work
         slice_start = -self.n_steps - (1 * (blank_count + 1))
-        slice_end = blank_count or None
+        slice_end = -blank_count or None
 
         return team_df.iloc[slice_start:slice_end, :]
 
