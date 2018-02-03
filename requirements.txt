@@ -10,7 +10,8 @@ pandas
 bs4
 aiohttp
 sqlalchemy
-scikit-learn
+scikit-learn==0.19.1
 python-dotenv
 gunicorn
 scipy
+requests

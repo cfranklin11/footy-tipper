@@ -8,6 +8,8 @@ UNSHIFTED_COLS = [
     'team',
     'oppo_team',
     'home_team',
+    'last_finals_reached',
+    'venue',
     'year',
     'round_number',
     'win_odds',
@@ -106,7 +108,6 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
             [self.__create_team_df(X, team) for team in unique_teams],
             axis=0
         )
-
         elo_df = self.__create_elo_df(team_df)
 
         return pd.concat([team_df, elo_df], axis=1)
@@ -149,10 +150,17 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
             index=['year', 'round_number'],
             values=['oppo_team', 'last_win', 'last_score'],
             columns='team',
-            # Got this aggfunc from:
+            # Got this aggfunc to pivot without aggregating numeric values from:
             # https://medium.com/@enricobergamini/creating-non-numeric-pivot-tables-with-python-pandas-7aa9dfd788a7
             aggfunc=lambda x: ' '.join(str(v) for v in x)
+        ).fillna(
+            0
         )
+
+        team_df['oppo_team'] = team_df['oppo_team'].astype(str)
+        team_df['last_win'] = team_df['last_win'].astype(int)
+        team_df['last_score'] = team_df['last_score'].astype(int)
+
         unique_teams = team_df.columns.get_level_values(1).drop_duplicates()
         elo_dict = {team: [] for team in unique_teams}
         row_indices = list(zip(team_df.index.get_level_values(0), team_df.index.get_level_values(1)))
@@ -192,7 +200,11 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
         last_team = last_round[(slice(None), team)]
 
         last_oppo_team_name = last_team['oppo_team']
-        last_oppo_team = None if last_oppo_team_name == '0' else last_round[(slice(None), last_oppo_team_name)]
+
+        if last_oppo_team_name == '0':
+            last_oppo_team = None
+        else:
+            last_oppo_team = last_round[(slice(None), last_oppo_team_name)]
 
         last_team_elo = self.__calculate_last_team_elo(elo_dict, team, idx, team_df, row, last_row)
 
@@ -200,7 +212,9 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
         if last_oppo_team is None:
             return last_team_elo
 
-        last_oppo_team_elo = self.__calculate_last_team_elo(elo_dict, last_oppo_team_name, idx, team_df, row, last_row)
+        last_oppo_team_elo = self.__calculate_last_team_elo(
+            elo_dict, last_oppo_team_name, idx, team_df, row, last_row
+        )
 
         team_r = 10**(last_team_elo / 400)
         oppo_r = 10**(last_oppo_team_elo / 400)
@@ -210,16 +224,16 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
 
         return team_elo
 
-    def __calculate_last_team_elo(self, elo_dict, team, idx, team_df, row, last_row):
-        last_team_elo = elo_dict[team][idx - 1]
+    def __calculate_last_team_elo(self, elo_dict, team_name, idx, team_df, row, last_row):
+        last_team_elo = elo_dict[team_name][idx - 1]
         # Revert to the mean by 25% at the start of every season
         if row[1] == 1:
             if last_team_elo != 0:
                 last_team_elo = last_team_elo * 0.75 + 1500 * 0.25
             # If team is new, they start at 1300
             if (
-                team_df.loc[(last_row[0], slice(None)), ('last_score', team)].sum() == 0 and
-                team_df.loc[(row[0], slice(None)), ('last_score', team)].sum() != 0
+                team_df.loc[(last_row[0], slice(None)), ('last_score', team_name)].sum() == 0 and
+                team_df.loc[(row[0], slice(None)), ('last_score', team_name)].sum() != 0
             ):
                 last_team_elo = 1300
 
@@ -325,7 +339,7 @@ class CategoryEncoder(BaseEstimator, TransformerMixin):
         encoder = LabelEncoder()
         df = X.copy()
         for column in self.columns:
-            df.loc[:, column] = encoder.fit_transform(df[column])
+            df.loc[:, column] = encoder.fit_transform(df[column].astype(str))
 
         return df
 
@@ -355,7 +369,8 @@ class TimeStepOneHotEncoder(BaseEstimator, TransformerMixin):
 
             Returns
             -------
-                {array-like}, shape = [n_observations, n_steps, n_categories] (n_categories -1 if sparse=True)
+                {array-like}, shape = [n_observations, n_steps, n_categories]
+                    (n_categories -1 if sparse=True)
                     Samples with axis 2 expanded to number of categories
             """
 

@@ -13,6 +13,9 @@ from app.routes import app
 from app.models import Match, Team, BettingOdds
 
 
+MIN_YEAR = 2000
+
+
 def seed_betting_odds(session, teams, matches):
     betting_df = pd.read_csv(
         os.path.join(project_path, 'data/afl_betting.csv'),
@@ -62,7 +65,7 @@ def seed_matches(session, teams):
     for match_record in match_records:
         # Heroku has 10K limit on DB records for the free tier,
         #  so we have to limit how far back we go when saving match data.
-        if match_record['full_date'] > datetime(1985, 1, 1):
+        if match_record['full_date'] > datetime(MIN_YEAR, 1, 1):
             match = {
                 'date': match_record['full_date'],
                 'season_round': match_record['season_round'],
