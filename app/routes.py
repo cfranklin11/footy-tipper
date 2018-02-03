@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, abort, request, jsonify
+from flask import Flask, render_template, abort, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 
@@ -45,5 +45,19 @@ def predict():
         predictions = MLModel(N_STEPS).predict(X, y)
 
         return jsonify(predictions)
+    else:
+        abort(401)
+
+
+@app.route('/update_data', methods=['POST'])
+def update():
+    from app.middleware.scraping import PageScraper, PageDataCleaner, DataSaver
+
+    if request.args.get('password') == app.config['PASSWORD']:
+        data = PageScraper().data()
+        dfs = PageDataCleaner(data).data()
+        DataSaver(dfs).save_data()
+
+        return make_response('New data was successfully saved.')
     else:
         abort(401)
