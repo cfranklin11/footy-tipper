@@ -38,7 +38,8 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    from app.middleware.ml_model import ModelData, MLModel
+    from app.actions.prepare_model_data import ModelData
+    from app.actions.predict_results import MLModel
 
     if request.args.get('password') == app.config['PASSWORD']:
         X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
@@ -51,11 +52,13 @@ def predict():
 
 @app.route('/update_data', methods=['POST'])
 def update():
-    from app.middleware.scraping import PageScraper, PageDataCleaner, DataSaver
+    from app.actions.scrape_data import PageScraper
+    from app.actions.clean_data import DataCleaner
+    from app.actions.save_data import DataSaver
 
     if request.args.get('password') == app.config['PASSWORD']:
         data = PageScraper().data()
-        dfs = PageDataCleaner(data).data()
+        dfs = DataCleaner(data).data()
         DataSaver(dfs).save_data()
 
         return make_response('New data was successfully saved.')

@@ -1,29 +1,28 @@
 import os
 import sys
+import numpy as np
+import dateutil
 import re
 from datetime import datetime
+import pandas as pd
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
-import pandas as pd
-import numpy as np
-from sklearn.externals import joblib
-import dateutil
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 if project_path not in sys.path:
     sys.path.append(project_path)
 
 from app.models import Match
-from lib.model.preprocessing import TimeStepDFCreator
+
 
 ROW_INDEXES = ['team', 'year', 'round_number']
 DIGITS = re.compile('round\s+(\d+)$', flags=re.I)
+MAX_REG_ROUND = 24
 QUALIFYING = re.compile('qualifying', flags=re.I)
 ELIMINATION = re.compile('elimination', flags=re.I)
 SEMI = re.compile('semi', flags=re.I)
 PRELIMINARY = re.compile('preliminary', flags=re.I)
 GRAND = re.compile('grand', flags=re.I)
-MAX_REG_ROUND = 24
 
 
 class MatchData():
@@ -237,124 +236,3 @@ class DBData(MatchData):
                 df_dict['point_spread'].extend([0, 0])
 
         return pd.DataFrame(df_dict)
-
-
-class ModelData():
-    def __init__(self, db_url, n_steps, train=False):
-        self.n_steps = n_steps
-
-        if train:
-            db_df = DBData(db_url).data()
-            min_year = db_df['year'].min()
-            csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
-
-            self.df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
-        else:
-            this_year = datetime.now().year
-            # Reducing quantity of data without minimising it, because getting the exact
-            # date range needed for predictions would be complicated & error prone
-            self.df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
-
-    def data(self):
-        return self.df
-
-    def prediction_data(self):
-        X = self.__team_df(self.df).drop('win', axis=1).drop('full_date', axis=1)
-        y = self.__team_df(
-            self.df[['team', 'year', 'round_number', 'venue', 'win']]
-        ).drop(
-            ['year', 'round_number', 'venue'], axis=1
-        )
-
-        return X, y
-
-    def __team_df(self, df):
-        unique_teams = df.index.get_level_values(0).drop_duplicates()
-        max_year = df['year'].max()
-        unique_rounds = df.xs(max_year, level=1)['round_number'].drop_duplicates().values
-
-        # Filling missing rounds to make sure all segments are the same shape
-        # can lead to the current round being blank. We want to predict on the latest real round.
-        # (All real matches should have a venue)
-        blank_count = 0
-        for round_number in unique_rounds[::-1]:
-            round_venues = df.xs([max_year, round_number], level=[1, 2])['venue']
-
-            if round_venues.apply(lambda x: x == '0').all():
-                blank_count += 1
-            else:
-                break
-
-        return pd.concat(
-            [self.__get_latest_round(df, blank_count, team) for team in unique_teams]
-        ).set_index(
-            ['team', 'year', 'round_number'], drop=False
-        ).sort_index()
-
-    def __get_latest_round(self, df, blank_count, team):
-        team_df = df.xs(
-            team, level=0, drop_level=False
-            # Resetting index, because pandas flips out if I try to slice
-            # with iloc while the df has a multiindex
-        ).sort_index(
-        ).reset_index(
-            drop=True
-        )
-
-        # Pad with earlier rounds per n_steps, so reshaping per time steps will work
-        slice_start = -self.n_steps - (1 * (blank_count + 1))
-        slice_end = -blank_count or None
-
-        return team_df.iloc[slice_start:slice_end, :]
-
-
-class MLModel():
-    def __init__(self, n_steps):
-        self.n_steps = n_steps
-
-    def predict(self, X, y):
-        X_pipeline = joblib.load(os.path.join(project_path, 'app/middleware/X_pipeline.pkl'))
-        model = joblib.load(os.path.join(project_path, 'app/middleware/model.pkl'))
-
-        X_transformed = X_pipeline.transform(X)
-
-        y_pred_proba = model.predict_proba(X_transformed)
-        pred_home_win = self.__compare_teams(X, y, y_pred_proba)
-        pred_df = pd.concat(
-            [X[['round_number', 'team', 'oppo_team']], pred_home_win], axis=1
-        ).dropna()
-        pred_df.columns = ['round_number', 'home_team', 'away_team', 'home_win_predicted']
-
-        return pred_df.to_dict('records')
-
-    def __compare_teams(self, X, y, y_pred_proba):
-        y_win_proba = y_pred_proba[:, 1]
-        column_suffix = '_t0'
-        row_indexes = [f'{idx}{column_suffix}' for idx in ROW_INDEXES]
-
-        X_test_transformed = TimeStepDFCreator(n_steps=self.n_steps).fit_transform(X)
-        y_test_transformed = TimeStepDFCreator(n_steps=self.n_steps).fit_transform(y)['win_t0']
-
-        win_df = X_test_transformed.assign(
-            win=y_test_transformed,
-            win_proba=y_win_proba
-        )
-
-        home_df = win_df[win_df[f'home_team{column_suffix}'] == 1]
-
-        away_df = win_df[
-            # On teams' bye weeks, oppo_team = '0'
-            ((win_df[f'home_team{column_suffix}'] == 0) &
-             (win_df[f'oppo_team{column_suffix}'] != '0'))
-        ][
-            ['win_proba', f'oppo_team{column_suffix}'] + row_indexes[1:]
-        ].set_index(
-            [f'oppo_team{column_suffix}'] + row_indexes[1:]
-        )
-        away_df.columns = 'away_' + away_df.columns.values
-        away_df.index.rename('team', level=0, inplace=True)
-
-        match_df = pd.concat([home_df, away_df], axis=1)
-
-        # Compare home & away win probabilities to get predicted winner
-        return (match_df['win_proba'] > match_df['away_win_proba']).apply(int).rename('home_win')
