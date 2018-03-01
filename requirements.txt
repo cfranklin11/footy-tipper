@@ -4,7 +4,6 @@ flask_sqlalchemy
 flask_script
 flask_migrate
 sqlalchemy
-autoenv
 numpy
 pandas
 bs4
@@ -15,3 +14,4 @@ python-dotenv
 gunicorn
 scipy
 requests
+sendgrid

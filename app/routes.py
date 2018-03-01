@@ -1,8 +1,11 @@
 import os
 import sys
-from flask import Flask, render_template, abort, request, jsonify, make_response
+from datetime import datetime
+from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+import sendgrid
+from sendgrid.helpers.mail import Email, Content, Mail
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
@@ -24,9 +27,13 @@ else:
 
 app.config['CSRF_ENABLED'] = True
 app.config['PASSWORD'] = os.environ.get('PASSWORD')
+app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
+app.config['EMAIL_RECIPIENT'] = os.environ.get('EMAIL_RECIPIENT')
 
 db = SQLAlchemy(app)
 
@@ -45,7 +52,15 @@ def predict():
         X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
         predictions = MLModel(N_STEPS).predict(X, y)
 
-        return jsonify(predictions)
+        sg = sendgrid.SendGridAPIClient(apikey=app.config['SENDGRID_API_KEY'])
+        from_email = Email('predictions@footytipper.com')
+        to_email = Email(app.config['EMAIL_RECIPIENT'])
+        subject = f'Footy Tips for {datetime.now().date()}'
+        content = Content("text/plain", str(predictions))
+        mail = Mail(from_email, subject, to_email, content)
+        response = sg.client.mail.send.post(request_body=mail.get())
+
+        return (response.body, response.status_code, response.headers.items())
     else:
         abort(401)
 
@@ -61,6 +76,6 @@ def update():
         dfs = DataCleaner(data).data()
         DataSaver(dfs).save_data()
 
-        return make_response('New data was successfully saved.')
+        return ('New data was successfully saved.', 200)
     else:
         abort(401)
