@@ -1,11 +1,8 @@
 import os
 import sys
-from datetime import datetime
 from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
-import sendgrid
-from sendgrid.helpers.mail import Email, Content, Mail
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
@@ -47,18 +44,16 @@ def home():
 def predict():
     from app.actions.prepare_model_data import ModelData
     from app.actions.predict_results import MLModel
+    from app.actions.send_mail import PredictionsMailer
 
     if request.args.get('password') == app.config['PASSWORD']:
         X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
         predictions = MLModel(N_STEPS).predict(X, y)
-
-        sg = sendgrid.SendGridAPIClient(apikey=app.config['SENDGRID_API_KEY'])
-        from_email = Email('predictions@footytipper.com')
-        to_email = Email(app.config['EMAIL_RECIPIENT'])
-        subject = f'Footy Tips for {datetime.now().date()}'
-        content = Content("text/plain", str(predictions))
-        mail = Mail(from_email, subject, to_email, content)
-        response = sg.client.mail.send.post(request_body=mail.get())
+        response = PredictionsMailer(
+            app.config['SENDGRID_API_KEY']
+        ).send(
+            app.config['EMAIL_RECIPIENT'], str(predictions)
+        )
 
         return (response.body, response.status_code, response.headers.items())
     else:
