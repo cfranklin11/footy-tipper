@@ -1,20 +1,17 @@
-import os
-
-
 class Config(object):
     DEBUG = False
     TESTING = False
     DEVELOPMENT = False
+    PRODUCTION = False
 
 
 class ProductionConfig(Config):
-    DATABASE_URL = os.getenv('DATABASE_URL')
+    PRODUCTION = True
 
 
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
-    DATABASE_URL = "postgresql://localhost:5432/footy_tipper"
 
 
 class TestingConfig(Config):

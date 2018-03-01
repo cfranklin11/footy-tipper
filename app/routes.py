@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, abort, request, jsonify, make_response
+from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 
@@ -24,9 +24,13 @@ else:
 
 app.config['CSRF_ENABLED'] = True
 app.config['PASSWORD'] = os.environ.get('PASSWORD')
+app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
+app.config['EMAIL_RECIPIENT'] = os.environ.get('EMAIL_RECIPIENT')
 
 db = SQLAlchemy(app)
 
@@ -38,26 +42,35 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    from app.middleware.ml_model import ModelData, MLModel
+    from app.actions.prepare_model_data import ModelData
+    from app.actions.predict_results import MLModel
+    from app.actions.send_mail import PredictionsMailer
 
     if request.args.get('password') == app.config['PASSWORD']:
         X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
         predictions = MLModel(N_STEPS).predict(X, y)
+        response = PredictionsMailer(
+            app.config['SENDGRID_API_KEY']
+        ).send(
+            app.config['EMAIL_RECIPIENT'], str(predictions)
+        )
 
-        return jsonify(predictions)
+        return (response.body, response.status_code, response.headers.items())
     else:
         abort(401)
 
 
 @app.route('/update_data', methods=['POST'])
 def update():
-    from app.middleware.scraping import PageScraper, PageDataCleaner, DataSaver
+    from app.actions.scrape_data import PageScraper
+    from app.actions.clean_data import DataCleaner
+    from app.actions.save_data import DataSaver
 
     if request.args.get('password') == app.config['PASSWORD']:
         data = PageScraper().data()
-        dfs = PageDataCleaner(data).data()
+        dfs = DataCleaner(data).data()
         DataSaver(dfs).save_data()
 
-        return make_response('New data was successfully saved.')
+        return ('New data was successfully saved.', 200)
     else:
         abort(401)
