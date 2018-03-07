@@ -1,4 +1,8 @@
-from app.routes import db
+from flask_sqlalchemy import SQLAlchemy
+from app.routes import app
+
+
+db = SQLAlchemy(app)
 
 
 class Match(db.Model):

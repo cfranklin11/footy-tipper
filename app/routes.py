@@ -1,7 +1,6 @@
 import os
 import sys
 from flask import Flask, render_template, abort, request
-from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -17,22 +16,21 @@ app = Flask(__name__)
 
 if os.getenv('PRODUCTION'):
     app.config.from_object(config.ProductionConfig)
+elif os.getenv('TESTING'):
+    app.config.from_object(config.TestingConfig)
+    dotenv_path = os.path.join(os.path.dirname(__file__), '../.env.test')
+    load_dotenv(dotenv_path)
 else:
     app.config.from_object(config.DevelopmentConfig)
     dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
     load_dotenv(dotenv_path)
 
-app.config['CSRF_ENABLED'] = True
 app.config['PASSWORD'] = os.environ.get('PASSWORD')
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL')
-
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
 app.config['EMAIL_RECIPIENT'] = os.environ.get('EMAIL_RECIPIENT')
-
-db = SQLAlchemy(app)
 
 
 @app.route('/')

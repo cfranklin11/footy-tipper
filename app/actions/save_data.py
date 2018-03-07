@@ -42,7 +42,11 @@ class DataSaver():
             session.close()
 
     def __save_match_data(self, session, teams):
-        match_df = self.data['match'].assign(
+        # TODO: footing-tipping-ml has updated handling of season_round/round_number.
+        # Update this with the general update of data handling
+        match_df = self.data['match'][
+            self.data['match']['season_round'].str.match(ROUND_NUM_REGEX)
+        ].assign(
             round_number=lambda x: x['season_round'].str.extract(ROUND_NUM_REGEX, expand=True).astype(int)
         )
 
@@ -55,7 +59,7 @@ class DataSaver():
                 match_df['date'] == last_date_played
             ]['round_number'].drop_duplicates().values
 
-            if len(last_round_played > 1):
+            if len(last_round_played) > 1:
                 raise(Exception(
                     f'More than one season found on date {last_date_played}: {last_round_played}'
                 ))
