@@ -1,0 +1,55 @@
+date,venue,team,win_odds,point_spread,season_round
+2017-03-23,MCG,Carlton,3.05,+16.5,Round 1
+2017-03-23,MCG,Richmond,1.41,-16.5,Round 1
+2017-03-24,MCG,Collingwood,3.05,+15.5,Round 1
+2017-03-24,MCG,Western Bulldogs,1.40,-15.5,Round 1
+2017-03-25,SCG,Sydney,1.29,-21.5,Round 1
+2017-03-25,SCG,Port Adelaide,3.66,+21.5,Round 1
+2017-03-25,Etihad Stadium,St Kilda,1.67,-6.5,Round 1
+2017-03-25,Etihad Stadium,Melbourne,2.25,+6.5,Round 1
+2017-03-25,Metricon Stadium,Gold Coast,1.27,-26.5,Round 1
+2017-03-25,Metricon Stadium,Brisbane,3.85,+26.5,Round 1
+2017-03-25,MCG,Essendon,3.05,+20.5,Round 1
+2017-03-25,MCG,Hawthorn,1.40,-20.5,Round 1
+2017-03-26,Etihad Stadium,North Melbourne,3.40,+21.5,Round 1
+2017-03-26,Etihad Stadium,West Coast,1.33,-21.5,Round 1
+2017-03-26,Adelaide Oval,Adelaide,2.00,+2.5,Round 1
+2017-03-26,Adelaide Oval,GWS,1.81,-2.5,Round 1
+2017-03-26,Domain Stadium,Fremantle,2.25,+5.5,Round 1
+2017-03-26,Domain Stadium,Geelong,1.67,-5.5,Round 1
+2017-03-30,MCG,Richmond,2.15,+6.5,Round 2
+2017-03-30,MCG,Collingwood,1.73,-6.5,Round 2
+2017-03-31,Etihad Stadium,Western Bulldogs,1.40,-16.5,Round 2
+2017-03-31,Etihad Stadium,Sydney,2.98,+16.5,Round 2
+2017-04-01,MCG,Hawthorn,2.00,+2.5,Round 2
+2017-04-01,MCG,Adelaide,1.84,-2.5,Round 2
+2017-04-01,Spotless Stadium,GWS,1.13,-39.5,Round 2
+2017-04-01,Spotless Stadium,Gold Coast,6.30,+39.5,Round 2
+2017-04-01,Domain Stadium,West Coast,1.17,-39.5,Round 2
+2017-04-01,Domain Stadium,St Kilda,5.30,+39.5,Round 2
+2017-04-01,Gabba,Brisbane,2.90,+15.5,Round 2
+2017-04-01,Gabba,Essendon,1.43,-15.5,Round 2
+2017-04-02,Etihad Stadium,Geelong,1.16,-33.5,Round 2
+2017-04-02,Etihad Stadium,North Melbourne,5.30,+33.5,Round 2
+2017-04-02,MCG,Melbourne,1.25,-25.5,Round 2
+2017-04-02,MCG,Carlton,4.00,+25.5,Round 2
+2017-04-02,Adelaide Oval,Port Adelaide,1.23,-27.5,Round 2
+2017-04-02,Adelaide Oval,Fremantle,4.25,+27.5,Round 2
+2017-04-07,SCG,Sydney,1.44,-13.5,Round 3
+2017-04-07,SCG,Collingwood,2.88,+13.5,Round 3
+2017-04-08,Blundstone Arena,North Melbourne,4.30,+29.5,Round 3
+2017-04-08,Blundstone Arena,GWS,1.23,-29.5,Round 3
+2017-04-08,MCG,Richmond,2.55,+12.5,Round 3
+2017-04-08,MCG,West Coast,1.54,-12.5,Round 3
+2017-04-08,Etihad Stadium,Geelong,1.40,-16.5,Round 3
+2017-04-08,Etihad Stadium,Melbourne,3.00,+16.5,Round 3
+2017-04-08,Domain Stadium,Fremantle,4.75,+32.5,Round 3
+2017-04-08,Domain Stadium,Western Bulldogs,1.20,-32.5,Round 3
+2017-04-08,Adelaide Oval,Port Adelaide,2.30,+6.5,Round 3
+2017-04-08,Adelaide Oval,Adelaide,1.65,-6.5,Round 3
+2017-04-09,Etihad Stadium,St Kilda,1.15,-36.5,Round 3
+2017-04-09,Etihad Stadium,Brisbane,5.75,+36.5,Round 3
+2017-04-09,MCG,Carlton,3.20,+18.5,Round 3
+2017-04-09,MCG,Essendon,1.37,-18.5,Round 3
+2017-04-09,Metricon Stadium,Gold Coast,3.04,+17.5,Round 3
+2017-04-09,Metricon Stadium,Hawthorn,1.40,-17.5,Round 3

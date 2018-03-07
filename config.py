@@ -3,6 +3,11 @@ class Config(object):
     TESTING = False
     DEVELOPMENT = False
     PRODUCTION = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    CSRF_ENABLED = True
+    SQLALCHEMY_BINDS = {
+        'test': 'sqlite://'
+    }
 
 
 class ProductionConfig(Config):

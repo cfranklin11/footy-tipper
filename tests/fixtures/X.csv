@@ -1,0 +1,109 @@
+team,year,round_number,home_team,last_finals_reached,oppo_score,oppo_team,point_spread,score,venue,win_odds
+Adelaide,2017,19,0.0,0.0,103.0,Collingwood,-11.0,103.0,MCG,1.55
+Adelaide,2017,20,1.0,0.0,46.0,Port Adelaide,-12.0,130.0,Adelaide Oval,1.54
+Adelaide,2017,21,0.0,0.0,80.0,Essendon,-41.0,123.0,Etihad Stadium,1.13
+Adelaide,2017,22,1.0,0.0,83.0,Sydney,4.0,80.0,Adelaide Oval,2.05
+Adelaide,2017,23,0.0,0.0,100.0,West Coast,2.0,71.0,Domain Stadium,1.96
+Adelaide,2018,1,0.0,4.0,0.0,Essendon,0.0,0.0,Etihad Stadium,0.0
+Brisbane,2017,19,0.0,0.0,113.0,West Coast,54.0,45.0,Domain Stadium,8.5
+Brisbane,2017,20,1.0,0.0,103.0,Western Bulldogs,28.0,89.0,Gabba,4.15
+Brisbane,2017,21,1.0,0.0,84.0,Gold Coast,-16.0,142.0,Gabba,1.47
+Brisbane,2017,22,0.0,0.0,104.0,Melbourne,45.0,91.0,MCG,7.5
+Brisbane,2017,23,1.0,0.0,130.0,North Melbourne,-16.0,79.0,Gabba,1.46
+Brisbane,2018,1,0.0,0.0,0.0,St Kilda,0.0,0.0,Etihad Stadium,0.0
+Carlton,2017,19,1.0,0.0,123.0,Geelong,40.0,58.0,Etihad Stadium,7.0
+Carlton,2017,20,0.0,0.0,84.0,Essendon,30.0,76.0,MCG,4.5
+Carlton,2017,21,0.0,0.0,100.0,West Coast,42.0,83.0,Domain Stadium,6.6
+Carlton,2017,22,1.0,0.0,70.0,Hawthorn,27.0,77.0,Etihad Stadium,4.0
+Carlton,2017,23,0.0,0.0,138.0,Sydney,54.0,57.0,SCG,11.0
+Carlton,2018,1,0.0,0.0,0.0,Richmond,0.0,0.0,MCG,0.0
+Collingwood,2017,19,1.0,0.0,103.0,Adelaide,11.0,103.0,MCG,2.5
+Collingwood,2017,20,0.0,0.0,57.0,North Melbourne,-23.0,111.0,Etihad Stadium,1.24
+Collingwood,2017,21,0.0,0.0,98.0,Port Adelaide,23.0,71.0,Adelaide Oval,3.25
+Collingwood,2017,22,1.0,0.0,70.0,Geelong,13.0,59.0,MCG,2.65
+Collingwood,2017,23,1.0,0.0,83.0,Melbourne,23.0,99.0,MCG,3.35
+Collingwood,2018,1,0.0,0.0,0.0,Hawthorn,0.0,0.0,MCG,0.0
+Essendon,2017,19,0.0,0.0,127.0,Western Bulldogs,-8.0,97.0,Etihad Stadium,1.67
+Essendon,2017,20,1.0,0.0,76.0,Carlton,-30.0,84.0,MCG,1.22
+Essendon,2017,21,1.0,0.0,123.0,Adelaide,41.0,80.0,Etihad Stadium,6.0
+Essendon,2017,22,0.0,0.0,57.0,Gold Coast,-25.0,90.0,Metricon Stadium,1.2
+Essendon,2017,23,1.0,0.0,92.0,Fremantle,-44.0,107.0,Etihad Stadium,1.1
+Essendon,2018,1,1.0,1.0,0.0,Adelaide,0.0,0.0,Etihad Stadium,0.0
+Fremantle,2017,19,0.0,0.0,98.0,GWS,51.0,86.0,Spotless Stadium,8.0
+Fremantle,2017,20,1.0,0.0,67.0,Gold Coast,-16.0,90.0,Domain Stadium,1.4
+Fremantle,2017,21,0.0,0.0,143.0,Sydney,55.0,39.0,SCG,11.0
+Fremantle,2017,22,1.0,0.0,155.0,Richmond,27.0,51.0,Domain Stadium,4.0
+Fremantle,2017,23,0.0,0.0,107.0,Essendon,44.0,92.0,Etihad Stadium,7.5
+Fremantle,2018,1,0.0,0.0,0.0,Port Adelaide,0.0,0.0,Adelaide Oval,0.0
+GWS,2017,19,1.0,0.0,86.0,Fremantle,-51.0,98.0,Spotless Stadium,1.09
+GWS,2017,20,1.0,0.0,62.0,Melbourne,-9.0,97.0,Manuka Oval,1.65
+GWS,2017,21,0.0,0.0,57.0,Western Bulldogs,-13.0,105.0,Etihad Stadium,1.47
+GWS,2017,22,1.0,0.0,60.0,West Coast,-35.0,81.0,Spotless Stadium,1.19
+GWS,2017,23,0.0,0.0,103.0,Geelong,9.0,59.0,GMHBA Stadium,2.34
+GWS,2018,1,1.0,3.0,0.0,Western Bulldogs,0.0,0.0,Manuka Oval,0.0
+Geelong,2017,19,0.0,0.0,58.0,Carlton,-40.0,123.0,Etihad Stadium,1.09
+Geelong,2017,20,1.0,0.0,107.0,Sydney,14.0,61.0,GMHBA Stadium,2.76
+Geelong,2017,21,1.0,0.0,66.0,Richmond,9.0,80.0,GMHBA Stadium,2.25
+Geelong,2017,22,0.0,0.0,59.0,Collingwood,-13.0,70.0,MCG,1.5
+Geelong,2017,23,1.0,0.0,59.0,GWS,-9.0,103.0,GMHBA Stadium,1.58
+Geelong,2018,1,0.0,3.0,0.0,Melbourne,0.0,0.0,MCG,0.0
+Gold Coast,2017,19,1.0,0.0,98.0,Richmond,11.0,65.0,Metricon Stadium,2.56
+Gold Coast,2017,20,0.0,0.0,90.0,Fremantle,16.0,67.0,Domain Stadium,2.94
+Gold Coast,2017,21,0.0,0.0,142.0,Brisbane,16.0,84.0,Gabba,2.75
+Gold Coast,2017,22,1.0,0.0,90.0,Essendon,25.0,57.0,Metricon Stadium,4.5
+Gold Coast,2017,23,0.0,0.0,135.0,Port Adelaide,57.0,20.0,Adelaide Oval,13.0
+Gold Coast,2018,1,1.0,0.0,0.0,North Melbourne,0.0,0.0,Cazaly's Stadium,0.0
+Hawthorn,2017,19,1.0,0.0,66.0,Sydney,7.0,72.0,MCG,2.28
+Hawthorn,2017,20,0.0,0.0,93.0,Richmond,8.0,64.0,MCG,2.2
+Hawthorn,2017,21,1.0,0.0,89.0,North Melbourne,-17.0,116.0,UTAS Stadium,1.42
+Hawthorn,2017,22,0.0,0.0,77.0,Carlton,-27.0,70.0,Etihad Stadium,1.28
+Hawthorn,2017,23,1.0,0.0,90.0,Western Bulldogs,-2.0,99.0,Etihad Stadium,1.8
+Hawthorn,2018,1,1.0,0.0,0.0,Collingwood,0.0,0.0,MCG,0.0
+Melbourne,2017,19,0.0,0.0,76.0,North Melbourne,-23.0,72.0,Blundstone Arena,1.36
+Melbourne,2017,20,0.0,0.0,97.0,GWS,9.0,62.0,Manuka Oval,2.3
+Melbourne,2017,21,1.0,0.0,72.0,St Kilda,-12.0,96.0,MCG,1.58
+Melbourne,2017,22,1.0,0.0,91.0,Brisbane,-45.0,104.0,MCG,1.1
+Melbourne,2017,23,0.0,0.0,99.0,Collingwood,-23.0,83.0,MCG,1.35
+Melbourne,2018,1,1.0,0.0,0.0,Geelong,0.0,0.0,MCG,0.0
+North Melbourne,2017,19,1.0,0.0,72.0,Melbourne,23.0,76.0,Blundstone Arena,3.25
+North Melbourne,2017,20,1.0,0.0,111.0,Collingwood,23.0,57.0,Etihad Stadium,4.0
+North Melbourne,2017,21,0.0,0.0,116.0,Hawthorn,17.0,89.0,UTAS Stadium,2.95
+North Melbourne,2017,22,0.0,0.0,127.0,St Kilda,23.0,78.0,Etihad Stadium,3.65
+North Melbourne,2017,23,0.0,0.0,79.0,Brisbane,16.0,130.0,Gabba,2.8
+North Melbourne,2018,1,0.0,0.0,0.0,Gold Coast,0.0,0.0,Cazaly's Stadium,0.0
+Port Adelaide,2017,19,1.0,0.0,61.0,St Kilda,-24.0,63.0,Adelaide Oval,1.26
+Port Adelaide,2017,20,0.0,0.0,130.0,Adelaide,12.0,46.0,Adelaide Oval,2.55
+Port Adelaide,2017,21,1.0,0.0,71.0,Collingwood,-23.0,98.0,Adelaide Oval,1.36
+Port Adelaide,2017,22,0.0,0.0,79.0,Western Bulldogs,-2.0,96.0,Mars Stadium,1.88
+Port Adelaide,2017,23,1.0,0.0,20.0,Gold Coast,-57.0,135.0,Adelaide Oval,1.02
+Port Adelaide,2018,1,1.0,1.0,0.0,Fremantle,0.0,0.0,Adelaide Oval,0.0
+Richmond,2017,19,0.0,0.0,65.0,Gold Coast,-11.0,98.0,Metricon Stadium,1.51
+Richmond,2017,20,1.0,0.0,64.0,Hawthorn,-8.0,93.0,MCG,1.7
+Richmond,2017,21,0.0,0.0,80.0,Geelong,-9.0,66.0,GMHBA Stadium,1.68
+Richmond,2017,22,0.0,0.0,51.0,Fremantle,-27.0,155.0,Domain Stadium,1.26
+Richmond,2017,23,1.0,0.0,81.0,St Kilda,-10.0,122.0,MCG,1.54
+Richmond,2018,1,1.0,4.0,0.0,Carlton,0.0,0.0,MCG,0.0
+St Kilda,2017,19,0.0,0.0,63.0,Port Adelaide,24.0,61.0,Adelaide Oval,3.8
+St Kilda,2017,20,1.0,0.0,95.0,West Coast,-7.0,103.0,Etihad Stadium,1.7
+St Kilda,2017,21,0.0,0.0,96.0,Melbourne,12.0,72.0,MCG,2.45
+St Kilda,2017,22,1.0,0.0,78.0,North Melbourne,-23.0,127.0,Etihad Stadium,1.3
+St Kilda,2017,23,0.0,0.0,122.0,Richmond,10.0,81.0,MCG,2.55
+St Kilda,2018,1,1.0,0.0,0.0,Brisbane,0.0,0.0,Etihad Stadium,0.0
+Sydney,2017,19,0.0,0.0,72.0,Hawthorn,-7.0,66.0,MCG,1.62
+Sydney,2017,20,0.0,0.0,61.0,Geelong,-14.0,107.0,GMHBA Stadium,1.45
+Sydney,2017,21,1.0,0.0,39.0,Fremantle,-55.0,143.0,SCG,1.05
+Sydney,2017,22,0.0,0.0,80.0,Adelaide,-4.0,83.0,Adelaide Oval,1.77
+Sydney,2017,23,1.0,0.0,57.0,Carlton,-54.0,138.0,SCG,1.05
+Sydney,2018,1,0.0,2.0,0.0,West Coast,0.0,0.0,Perth Stadium,0.0
+West Coast,2017,19,1.0,0.0,45.0,Brisbane,-54.0,113.0,Domain Stadium,1.08
+West Coast,2017,20,0.0,0.0,103.0,St Kilda,7.0,95.0,Etihad Stadium,2.2
+West Coast,2017,21,1.0,0.0,83.0,Carlton,-42.0,100.0,Domain Stadium,1.11
+West Coast,2017,22,0.0,0.0,81.0,GWS,35.0,60.0,Spotless Stadium,5.0
+West Coast,2017,23,1.0,0.0,71.0,Adelaide,-2.0,100.0,Domain Stadium,1.88
+West Coast,2018,1,1.0,2.0,0.0,Sydney,0.0,0.0,Perth Stadium,0.0
+Western Bulldogs,2017,19,1.0,0.0,97.0,Essendon,8.0,127.0,Etihad Stadium,2.25
+Western Bulldogs,2017,20,0.0,0.0,89.0,Brisbane,-28.0,103.0,Gabba,1.25
+Western Bulldogs,2017,21,1.0,0.0,105.0,GWS,13.0,57.0,Etihad Stadium,2.66
+Western Bulldogs,2017,22,1.0,0.0,96.0,Port Adelaide,2.0,79.0,Mars Stadium,1.96
+Western Bulldogs,2017,23,0.0,0.0,99.0,Hawthorn,2.0,90.0,Etihad Stadium,2.0
+Western Bulldogs,2018,1,0.0,0.0,0.0,GWS,0.0,0.0,Manuka Oval,0.0

@@ -15,3 +15,5 @@ gunicorn
 scipy
 requests
 sendgrid
+pytest
+pytest-env
