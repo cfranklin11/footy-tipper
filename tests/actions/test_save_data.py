@@ -9,8 +9,8 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')
 if project_path not in sys.path:
     sys.path.append(project_path)
 
-from app.routes import app
-from app.models import db, Team
+from app.routes import app, db
+from app.models import Team
 from app.actions.save_data import DataSaver
 
 

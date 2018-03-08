@@ -1,6 +1,7 @@
 import os
 import sys
 from flask import Flask, render_template, abort, request
+from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -31,6 +32,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DATABASE_URL']
 
 app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
 app.config['EMAIL_RECIPIENT'] = os.environ.get('EMAIL_RECIPIENT')
+
+db = SQLAlchemy(app)
 
 
 @app.route('/')
