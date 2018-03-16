@@ -14,16 +14,10 @@ ROW_INDEXES = ['team', 'year', 'round_number']
 
 
 class MLModel():
-    def __init__(self, n_steps):
-        self.n_steps = n_steps
-
     def predict(self, X, y):
-        X_pipeline = joblib.load(os.path.join(project_path, 'app/estimators/X_pipeline.pkl'))
-        model = joblib.load(os.path.join(project_path, 'app/estimators/model.pkl'))
+        estimator = joblib.load(os.path.join(project_path, 'app/estimators/TimeStepVotingClassifier.pkl'))
 
-        X_transformed = X_pipeline.transform(X)
-
-        y_pred_proba = model.predict_proba(X_transformed)
+        y_pred_proba = estimator.predict_proba(X)
         pred_home_win = self.__compare_teams(X, y, y_pred_proba)
         pred_df = pd.concat(
             [X[['round_number', 'team', 'oppo_team']], pred_home_win], axis=1

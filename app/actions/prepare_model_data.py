@@ -29,9 +29,7 @@ UNSHIFTED_COLS = ['team', 'oppo_team', 'last_finals_reached', 'venue', 'home_tea
 
 
 class ModelData():
-    def __init__(self, db_url, n_steps, train=False):
-        self.n_steps = n_steps
-
+    def __init__(self, db_url, train=False):
         if train:
             db_df = DBData(db_url).data()
             min_year = db_df['year'].min()
@@ -41,8 +39,8 @@ class ModelData():
             full_df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
         else:
             this_year = datetime.now().year
-            # Reducing quantity of data without minimising it, because getting the exact
-            # date range needed for predictions would be complicated & error prone
+            # TimeStepVotingClassifier expects data from this year & previous year,
+            # and reshapes the data per n_steps param of each model
             full_df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
 
         self.df = CumulativeFeatureBuilder().transform(full_df.drop('win', axis=1), y=full_df['win'])
@@ -51,7 +49,7 @@ class ModelData():
         return self.df
 
     def prediction_data(self):
-        X = self.__team_df(self.df).drop('win', axis=1).drop('full_date', axis=1)
+        X = self.__team_df(self.df).drop('win', axis=1)
         y = self.__team_df(
             self.df[['team', 'year', 'round_number', 'venue', 'win']]
         ).drop(
@@ -93,11 +91,9 @@ class ModelData():
             drop=True
         )
 
-        # Pad with earlier rounds per n_steps, so reshaping per time steps will work
-        slice_start = -self.n_steps - (1 * (blank_count + 1))
         slice_end = -blank_count or None
 
-        return team_df.iloc[slice_start:slice_end, :]
+        return team_df.iloc[:slice_end, :]
 
 
 class MatchData():
@@ -250,7 +246,7 @@ class DBData(MatchData):
     def __init__(self, db_url):
         self.db_url = db_url
 
-    def data(self, year_range=(1, 3000)):
+    def data(self, year_range=(0, None)):
         engine = create_engine(self.db_url)
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -264,14 +260,15 @@ class DBData(MatchData):
         return clean_df
 
     def __fetch_data(self, session, year_range):
-        return session.query(
-            Match
-        ).filter(
-            and_(
+        if year_range[1] is None:
+            date_filter = and_(Match.date >= datetime(int(year_range[0]), 1, 1))
+        else:
+            date_filter = and_(
                 Match.date >= datetime(int(year_range[0]), 1, 1),
                 Match.date <= datetime(int(year_range[1]) + 1, 1, 1)
             )
-        ).all()
+
+        return session.query(Match).filter(date_filter).all()
 
     def __create_df(self, data):
         df_dict = {

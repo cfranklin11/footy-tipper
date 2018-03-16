@@ -10,9 +10,6 @@ if project_path not in sys.path:
 
 import config
 
-
-N_STEPS = 5
-
 app = Flask(__name__)
 
 if os.getenv('PRODUCTION'):
@@ -48,8 +45,8 @@ def predict():
     from app.actions.send_mail import PredictionsMailer
 
     if request.args.get('password') == app.config['PASSWORD']:
-        X, y = ModelData(app.config['DATABASE_URL'], N_STEPS).prediction_data()
-        predictions = MLModel(N_STEPS).predict(X, y)
+        X, y = ModelData(app.config['DATABASE_URL']).prediction_data()
+        predictions = MLModel().predict(X, y)
         response = PredictionsMailer(
             app.config['SENDGRID_API_KEY']
         ).send(
