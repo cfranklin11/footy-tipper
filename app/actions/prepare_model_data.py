@@ -7,6 +7,7 @@ import dateutil
 import re
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
+from sklearn.base import BaseEstimator, TransformerMixin
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 if project_path not in sys.path:
@@ -23,31 +24,32 @@ ELIMINATION = re.compile('elimination', flags=re.I)
 SEMI = re.compile('semi', flags=re.I)
 PRELIMINARY = re.compile('preliminary', flags=re.I)
 GRAND = re.compile('grand', flags=re.I)
+UNSHIFTED_COLS = ['team', 'oppo_team', 'last_finals_reached', 'venue', 'home_team',
+                  'year', 'round_number', 'win_odds', 'point_spread']
 
 
 class ModelData():
-    def __init__(self, db_url, n_steps, train=False):
-        self.n_steps = n_steps
-
+    def __init__(self, db_url, train=False):
         if train:
             db_df = DBData(db_url).data()
             min_year = db_df['year'].min()
             # Have to read some data off a CSV due to DB size restrictions for a free app
             # on Heroku
             csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
-
-            self.df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
+            full_df = csv_df.append(db_df).sort_index().fillna(0)
         else:
             this_year = datetime.now().year
-            # Reducing quantity of data without minimising it, because getting the exact
-            # date range needed for predictions would be complicated & error prone
-            self.df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
+            # TimeStepVotingClassifier expects data from this year & previous year,
+            # and reshapes the data per n_steps param of each model
+            full_df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
+
+        self.df = CumulativeFeatureBuilder().transform(full_df.drop('win', axis=1), y=full_df['win'])
 
     def data(self):
         return self.df
 
     def prediction_data(self):
-        X = self.__team_df(self.df).drop('win', axis=1).drop('full_date', axis=1)
+        X = self.__team_df(self.df).drop('win', axis=1)
         y = self.__team_df(
             self.df[['team', 'year', 'round_number', 'venue', 'win']]
         ).drop(
@@ -89,11 +91,9 @@ class ModelData():
             drop=True
         )
 
-        # Pad with earlier rounds per n_steps, so reshaping per time steps will work
-        slice_start = -self.n_steps - (1 * (blank_count + 1))
         slice_end = -blank_count or None
 
-        return team_df.iloc[slice_start:slice_end, :]
+        return team_df.iloc[:slice_end, :]
 
 
 class MatchData():
@@ -196,14 +196,14 @@ class CSVData(MatchData):
     def __init__(self, data_directory):
         self.data_directory = data_directory
 
-    def data(self, max_year=1989):
+    def data(self, max_year=2000):
         match_df = self.__create_match_df(os.path.join(self.data_directory, 'ft_match_list.csv'))
         betting_df = self.__create_betting_df(os.path.join(self.data_directory, 'afl_betting.csv'))
         merged_df = match_df.merge(betting_df, on=['team', 'full_date'], how='left').fillna(0)
 
         clean_df = self.clean_match_df(merged_df)
 
-        return clean_df[clean_df['year'] <= max_year]
+        return clean_df[clean_df['year'] <= max_year].drop('full_date', axis=1)
 
     def __create_match_df(self, file_path):
         df = pd.read_csv(
@@ -246,30 +246,31 @@ class DBData(MatchData):
     def __init__(self, db_url):
         self.db_url = db_url
 
-    def data(self, year_range=(1, 3000)):
+    def data(self, year_range=(0, None)):
         engine = create_engine(self.db_url)
         Session = sessionmaker(bind=engine)
         session = Session()
 
         data = self.__fetch_data(session, year_range)
-        df = self.__create_match_df(data)
+        df = self.__create_df(data)
         clean_df = self.clean_match_df(df)
 
         session.close()
 
-        return clean_df
+        return clean_df.drop('full_date', axis=1)
 
     def __fetch_data(self, session, year_range):
-        return session.query(
-            Match
-        ).filter(
-            and_(
+        if year_range[1] is None:
+            date_filter = and_(Match.date >= datetime(int(year_range[0]), 1, 1))
+        else:
+            date_filter = and_(
                 Match.date >= datetime(int(year_range[0]), 1, 1),
                 Match.date <= datetime(int(year_range[1]) + 1, 1, 1)
             )
-        ).all()
 
-    def __create_match_df(self, data):
+        return session.query(Match).filter(date_filter).all()
+
+    def __create_df(self, data):
         df_dict = {
             'year': [],
             'season_round': [],
@@ -307,3 +308,198 @@ class DBData(MatchData):
                 df_dict['point_spread'].extend([0, 0])
 
         return pd.DataFrame(df_dict)
+
+
+class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
+    """
+    Reshapes a stacked DataFrame into an array of matrices segmented by team and
+    adds features with cumulative sums and rolling averages.
+
+    Parameters
+    ----------
+        window_size : {int}
+            Size of the rolling window for calculating average score, average oppo score,
+            and average percentage.
+        k_factor : {int}
+            Rate of change for elo rating after each match.
+    """
+
+    def __init__(self, window_size=23, k_factor=20, unshifted_cols=UNSHIFTED_COLS):
+        self.window_size = window_size
+        self.k_factor = k_factor
+        self.unshifted_cols = unshifted_cols
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        """
+        Parameters
+        ----------
+            X : {DataFrame}, shape = [n_observations, n_features]
+                Samples.
+
+        Returns
+        -------
+            {DataFrame}, shape = [n_observations, n_features + n_cumulative_features]
+                Samples with additional features, segmented by team.
+        """
+
+        unique_teams = X.index.get_level_values(0).drop_duplicates()
+
+        if y is None:
+            df = X
+        else:
+            df = pd.concat([X, y], axis=1)
+            self.unshifted_cols.append('win')
+
+        team_df = pd.concat(
+            [self.__create_team_df(df, team) for team in unique_teams],
+            axis=0
+        )
+        elo_df = self.__create_elo_df(team_df)
+        concat_df = pd.concat([team_df, elo_df], axis=1)
+
+        return self.__zero_out_filler_rounds(concat_df)
+
+    def __zero_out_filler_rounds(self, df):
+        string_cols = df.select_dtypes([object]).columns.values
+        real_rounds = df[df['oppo_team'] != '0']
+        filler_rounds = df[df['oppo_team'] == '0']
+
+        filler_rounds.loc[:, :] = 0
+        filler_rounds.loc[:, string_cols] = filler_rounds[string_cols].astype(str)
+        filler_rounds.loc[:, ['team', 'year', 'round_number']] = np.array(
+            # Fill in index columns with indexes for reset_index/set_index in later transformations
+            [filler_rounds.index.get_level_values(level) for level in range(len(filler_rounds.index.levels))]
+        ).transpose(1, 0)
+
+        return pd.concat([real_rounds, filler_rounds]).sort_index()
+
+    def __create_team_df(self, X, team):
+        filtered_df = X.xs(
+            team, level=0, drop_level=False
+        )
+        shifted_df = filtered_df.drop(
+            self.unshifted_cols, axis=1
+        ).sort_index(
+            ascending=True
+        ).shift(
+        ).fillna(
+            0
+        )
+
+        shifted_df.columns = 'last_' + shifted_df.columns.values
+        last_win_column = (shifted_df['last_score'] > shifted_df['last_oppo_score']).astype(int)
+
+        team_df = pd.concat(
+            [filtered_df[self.unshifted_cols], shifted_df],
+            axis=1
+        ).assign(
+            last_win=last_win_column,
+            rolling_avg_score=lambda x: self.__rolling_mean(x['last_score']),
+            rolling_avg_oppo_score=lambda x: self.__rolling_mean(x['last_oppo_score']),
+            rolling_percent=lambda x: (
+                self.__rolling_mean(x['last_score']) / self.__rolling_mean(x['last_oppo_score'])
+            ).fillna(
+                0
+            ),
+            rolling_win_percent=self.__rolling_mean(last_win_column),
+            cum_score=lambda x: x.groupby(level=[0, 1])['last_score'].cumsum(),
+            cum_oppo_score=lambda x: x.groupby(level=[0, 1])['last_oppo_score'].cumsum()
+        )
+        team_df['cum_wins'] = team_df.groupby(level=[0, 1])['last_win'].cumsum()
+        team_df['cum_percent'] = (team_df['cum_score'] / team_df['cum_oppo_score']).fillna(0)
+
+        return team_df
+
+    def __rolling_mean(self, col):
+        return col.rolling(self.window_size, min_periods=1).mean().fillna(0)
+
+    def __create_elo_df(self, df):
+        team_df = df.loc[
+            :, ['oppo_team', 'last_win', 'last_score']
+        ].pivot_table(
+            index=['year', 'round_number'],
+            values=['oppo_team', 'last_win', 'last_score'],
+            columns='team',
+            # Got this aggfunc for using string column in values from:
+            # https://medium.com/@enricobergamini/creating-non-numeric-pivot-tables-with-python-pandas-7aa9dfd788a7
+            aggfunc=lambda x: ' '.join(str(v) for v in x)
+        )
+        unique_teams = team_df.columns.get_level_values(1).drop_duplicates()
+        elo_dict = {team: [] for team in unique_teams}
+        row_indices = list(zip(team_df.index.get_level_values(0), team_df.index.get_level_values(1)))
+
+        for idx, row in enumerate(row_indices):
+            for team in unique_teams:
+                elo_dict[team].append(self.__calculate_elo(idx, row, row_indices, team_df, team, elo_dict))
+
+        elo_df = pd.DataFrame(
+            elo_dict
+        ).assign(
+            year=team_df.index.get_level_values(0), round_number=team_df.index.get_level_values(1)
+        )
+
+        return pd.melt(
+            elo_df,
+            var_name='team',
+            value_name='elo_rating',
+            id_vars=['year', 'round_number']
+        ).set_index(
+            ['team', 'year', 'round_number']
+        )
+
+    def __calculate_elo(self, idx, row, row_indices, team_df, team, elo_dict):
+        this_round = team_df.loc[row, :]
+        last_row = row_indices[idx - 1] if idx > 0 else None
+        last_round = None if last_row is None else team_df.loc[last_row]
+
+        if last_round is None:
+            # Start teams out at 1500 unless they don't exist in the first available season
+            if team_df.loc[(row[0], slice(None)), ('last_score', team)].sum() > 0:
+                return 1500
+            else:
+                return 0
+
+        this_team = this_round[(slice(None), team)]
+        last_team = last_round[(slice(None), team)]
+
+        last_oppo_team_name = last_team['oppo_team']
+        if last_oppo_team_name == '0':
+            last_oppo_team = None
+        else:
+            last_oppo_team = last_round[(slice(None), last_oppo_team_name)]
+
+        last_team_elo = self.__calculate_last_team_elo(elo_dict, team, idx, team_df, row, last_row)
+
+        # If last week was a bye, just keep the same elo
+        if last_oppo_team is None:
+            return last_team_elo
+
+        last_oppo_team_elo = self.__calculate_last_team_elo(
+            elo_dict, last_oppo_team_name, idx, team_df, row, last_row
+        )
+
+        team_r = 10**(last_team_elo / 400)
+        oppo_r = 10**(last_oppo_team_elo / 400)
+        team_e = team_r / (team_r + oppo_r)
+        team_s = int(this_team['last_win'])
+        team_elo = int(last_team_elo + self.k_factor * (team_s - team_e))
+
+        return team_elo
+
+    def __calculate_last_team_elo(self, elo_dict, team, idx, team_df, row, last_row):
+        last_team_elo = elo_dict[team][idx - 1]
+        # Revert to the mean by 25% at the start of every season
+        if row[1] == 1:
+            if last_team_elo != 0:
+                last_team_elo = last_team_elo * 0.75 + 1500 * 0.25
+            # If team is new, they start at 1300
+            if (
+                team_df.loc[(last_row[0], slice(None)), ('last_score', team)].sum() == 0 and
+                team_df.loc[(row[0], slice(None)), ('last_score', team)].sum() != 0
+            ):
+                last_team_elo = 1300
+
+        return last_team_elo
