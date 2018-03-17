@@ -7,18 +7,20 @@ project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')
 if project_path not in sys.path:
     sys.path.append(project_path)
 
-from app.actions.predict_results import MLModel
+from app.actions.estimators import Estimator
 
 
 N_STEPS = 5
 ROW_INDEXES = ['team', 'year', 'round_number']
 
 
-class TestMLModel(unittest.TestCase):
+class TestEstimator(unittest.TestCase):
     def setUp(self):
-        self.described_class = MLModel
-        self.X = pd.read_csv(os.path.join(project_path, 'tests/fixtures/X.csv')).set_index(ROW_INDEXES, drop=False)
-        self.y = pd.read_csv(os.path.join(project_path, 'tests/fixtures/y.csv')).set_index(ROW_INDEXES, drop=False)
+        self.described_class = Estimator
+        self.X = (pd.read_csv(os.path.join(project_path, 'tests/fixtures/X.csv'))
+                    .set_index(ROW_INDEXES, drop=False))
+        self.y = (pd.read_csv(os.path.join(project_path, 'tests/fixtures/y.csv'))
+                    .set_index(ROW_INDEXES, drop=False))
 
     def test_predict(self):
         teams = self.X['team'].drop_duplicates()

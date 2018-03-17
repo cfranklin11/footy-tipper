@@ -41,19 +41,24 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     from app.actions.prepare_model_data import ModelData
-    from app.actions.predict_results import MLModel
+    from app.estimators.estimator import Estimator
     from app.actions.send_mail import PredictionsMailer
 
     if request.args.get('password') == app.config['PASSWORD']:
         X, y = ModelData(app.config['DATABASE_URL']).prediction_data()
-        predictions = MLModel().predict(X, y)
-        response = PredictionsMailer(
-            app.config['SENDGRID_API_KEY']
-        ).send(
-            app.config['EMAIL_RECIPIENT'], str(predictions)
-        )
+        predictions = Estimator().predict(X, y)
 
-        return (response.body, response.status_code, response.headers.items())
+        if app.config['PRODUCTION']:
+            response = PredictionsMailer(
+                app.config['SENDGRID_API_KEY']
+            ).send(
+                app.config['EMAIL_RECIPIENT'], str(predictions)
+            )
+
+            return (response.body, response.status_code, response.headers.items())
+        else:
+            import json
+            return json.dumps(predictions)
     else:
         abort(401)
 

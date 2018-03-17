@@ -36,7 +36,7 @@ class ModelData():
             # Have to read some data off a CSV due to DB size restrictions for a free app
             # on Heroku
             csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
-            full_df = csv_df.append(db_df).sort_index().fillna(0).drop('full_date', axis=1)
+            full_df = csv_df.append(db_df).sort_index().fillna(0)
         else:
             this_year = datetime.now().year
             # TimeStepVotingClassifier expects data from this year & previous year,
@@ -196,14 +196,14 @@ class CSVData(MatchData):
     def __init__(self, data_directory):
         self.data_directory = data_directory
 
-    def data(self, max_year=1989):
+    def data(self, max_year=2000):
         match_df = self.__create_match_df(os.path.join(self.data_directory, 'ft_match_list.csv'))
         betting_df = self.__create_betting_df(os.path.join(self.data_directory, 'afl_betting.csv'))
         merged_df = match_df.merge(betting_df, on=['team', 'full_date'], how='left').fillna(0)
 
         clean_df = self.clean_match_df(merged_df)
 
-        return clean_df[clean_df['year'] <= max_year]
+        return clean_df[clean_df['year'] <= max_year].drop('full_date', axis=1)
 
     def __create_match_df(self, file_path):
         df = pd.read_csv(
@@ -257,7 +257,7 @@ class DBData(MatchData):
 
         session.close()
 
-        return clean_df
+        return clean_df.drop('full_date', axis=1)
 
     def __fetch_data(self, session, year_range):
         if year_range[1] is None:
@@ -413,16 +413,6 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
 
         return team_df
 
-        # cum_score_df = team_df.groupby(level=[0, 1])['last_score'].cumsum().rename('cum_score')
-        # cum_oppo_score_df = team_df.groupby(level=[0, 1])['last_oppo_score'].cumsum().rename('cum_oppo_score')
-        # cum_win_df = team_df.groupby(level=[0, 1])['last_win'].cumsum().rename('cum_wins')
-
-        # return pd.concat(
-        #     [team_df, cum_score_df, cum_oppo_score_df, cum_win_df], axis=1
-        # ).assign(
-        #     cum_percent=lambda x: (x['cum_score'] / x['cum_oppo_score']).fillna(0)
-        # )
-
     def __rolling_mean(self, col):
         return col.rolling(self.window_size, min_periods=1).mean().fillna(0)
 
@@ -476,7 +466,10 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
         last_team = last_round[(slice(None), team)]
 
         last_oppo_team_name = last_team['oppo_team']
-        last_oppo_team = None if last_oppo_team_name == '0' else last_round[(slice(None), last_oppo_team_name)]
+        if last_oppo_team_name == '0':
+            last_oppo_team = None
+        else:
+            last_oppo_team = last_round[(slice(None), last_oppo_team_name)]
 
         last_team_elo = self.__calculate_last_team_elo(elo_dict, team, idx, team_df, row, last_row)
 
@@ -484,7 +477,9 @@ class CumulativeFeatureBuilder(BaseEstimator, TransformerMixin):
         if last_oppo_team is None:
             return last_team_elo
 
-        last_oppo_team_elo = self.__calculate_last_team_elo(elo_dict, last_oppo_team_name, idx, team_df, row, last_row)
+        last_oppo_team_elo = self.__calculate_last_team_elo(
+            elo_dict, last_oppo_team_name, idx, team_df, row, last_row
+        )
 
         team_r = 10**(last_team_elo / 400)
         oppo_r = 10**(last_oppo_team_elo / 400)
