@@ -23,7 +23,14 @@ TEAM_TRANSLATION = {
     'Eagles': 'West Coast',
     'Lions': 'Brisbane',
     'Cats': 'Geelong',
-    'Hawks': 'Hawthorn'
+    'Hawks': 'Hawthorn',
+    'Adelaide Crows': 'Adelaide',
+    'Brisbane Lions': 'Brisbane',
+    'Gold Coast Suns': 'Gold Coast',
+    'GWS Giants': 'GWS',
+    'Geelong Cats': 'Geelong',
+    'West Coast Eagles': 'West Coast',
+    'Sydney Swans': 'Sydney'
 }
 VENUE_TRANSLATION = {
     'AAMI': 'AAMI Stadium',
@@ -56,33 +63,43 @@ VENUE_TRANSLATION = {
 ROUND_REGEX = re.compile('(round\s+\d\d?|.*final.*)', flags=re.I)
 MATCH_COL_NAMES = ['year', 'date', 'home_team', 'away_team', 'venue', 'result']
 MATCH_COL_INDICES = [0, 1, 2, 4, 5, 7]
-BETTING_COL_NAMES = ['year', 'date', 'venue', 'team', 'score', 'margin', 'win_odds',
-                     'win_paid', 'point_spread']
-BETTING_COL_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+FW_BETTING_COL_NAMES = ['year', 'date', 'venue', 'team', 'score', 'margin', 'win_odds',
+                        'win_paid', 'point_spread']
+FW_BETTING_COL_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+LB_BETTING_COL_INDICES = [0, 1, 3]
+LB_BETTING_COL_NAMES = {0: 'team', 1: 'win_odds', 3: 'line_odds'}
 
 
 class DataCleaner():
-    def __init__(self, page_data):
+    def __init__(self, page_data, footywire=False):
         self.page_data = page_data
+        self.footywire = footywire
 
     def data(self):
         data_dfs = {}
-        for page in self.page_data:
-            if page['name'] == 'ft_match_list':
-                data_dfs['match'] = self.__clean_match_data(page['data'])
-            elif page['name'] == 'afl_betting':
-                data_dfs['betting_odds'] = self.__clean_betting_data(page['data'])
+
+        if 'ft_match_list' in self.page_data.keys():
+            data_dfs['match'] = self.__clean_match_data(self.page_data['ft_match_list'])
+        if 'afl_betting' in self.page_data.keys():
+            # Data cleaning for the two different sources of betting data is too
+            # different to put in the same method
+            if self.footywire:
+                data_dfs['betting_odds'] = self.__clean_fw_betting_data(
+                    self.page_data['afl_betting']
+                )
             else:
-                raise Exception(f'Unknown page: {page}')
+                data_dfs['betting_odds'] = self.__clean_lb_betting_data(
+                    self.page_data['afl_betting'], data_dfs['match']
+                )
 
         return data_dfs
 
     def __clean_match_data(self, data):
-            # Ignore useless columns that are result of BeautifulSoup table parsing
+        # Ignore useless columns that are result of BeautifulSoup table parsing
         df = pd.DataFrame(data).iloc[:, MATCH_COL_INDICES]
         df.columns = MATCH_COL_NAMES
 
-        df = df.assign(season_round=self.__get_season_round)
+        df = df.assign(season_round=self.__get_season_round('date'))
         df.loc[:, 'home_team'] = df['home_team'].apply(
             lambda x: np.nan if x in ['BYE', 'MATCH CANCELLED'] else x
         )
@@ -123,15 +140,13 @@ class DataCleaner():
 
         return df
 
-    def __clean_betting_data(self, data):
+    def __clean_fw_betting_data(self, data):
         # Ignore useless columns that are result of BeautifulSoup table parsing
-        df = pd.DataFrame(data).iloc[:, BETTING_COL_INDICES]
-        df.columns = BETTING_COL_NAMES
-        df = df.assign(season_round=self.__get_season_round)
+        df = pd.DataFrame(data).iloc[:, FW_BETTING_COL_INDICES]
+        df.columns = FW_BETTING_COL_NAMES
+        df = df.assign(season_round=self.__get_season_round('date'))
 
-        df.loc[:, 'team'] = df['team'].apply(
-            lambda x: TEAM_TRANSLATION[x] if x in TEAM_TRANSLATION.keys() else x
-        )
+        df.loc[:, 'team'] = df['team'].apply(self.__translate_teams)
         # Round label just appears at top of round in table,
         # so forward fill to apply it to all relevant matches
         df.loc[:, 'season_round'].fillna(method='ffill', inplace=True)
@@ -165,8 +180,34 @@ class DataCleaner():
 
         return df
 
-    def __get_season_round(self, df):
-        return df['date'].str.extract(ROUND_REGEX, expand=True)
+    def __clean_lb_betting_data(self, data, match_df):
+        df = (pd.DataFrame(data)
+                .iloc[:, LB_BETTING_COL_INDICES]
+                .rename(LB_BETTING_COL_NAMES, axis=1)
+              # Season round and date data is in first column ('team'), so we extract
+              # them, then drop NaNs
+                .assign(season_round=self.__get_season_round('team'),
+                        date=lambda x: pd.to_datetime(x['team'], errors='coerce'),
+                        point_spread=lambda x: (
+                            x['line_odds'].str.split(' @ ', expand=True)[0].astype(float)))
+                .drop('line_odds', axis=1)
+              )
+
+        df.loc[:, ['season_round', 'date']] = df[['season_round', 'date']].ffill()
+        df.dropna(inplace=True)
+        df.loc[:, 'date'] = df['date'].apply(datetime.date)
+        df.loc[:, 'team'] = df['team'].apply(self.__translate_teams)
+
+        venue_df = pd.DataFrame({
+            'team': pd.concat([match_df['home_team'], match_df['away_team']]),
+            'venue': pd.concat([match_df['venue'], match_df['venue']]),
+            'date': pd.concat([match_df['date'], match_df['date']])
+        })
+
+        return df.merge(venue_df, on=['team', 'date'], how='left')
+
+    def __get_season_round(self, column):
+        return lambda x: x[column].str.extract(ROUND_REGEX, expand=True)
 
     def __get_home_score(self, df):
         results = df['result'].str.split('-')
@@ -186,3 +227,6 @@ class DataCleaner():
         ).apply(
             datetime.date
         )
+
+    def __translate_teams(self, x):
+        return TEAM_TRANSLATION[x] if x in TEAM_TRANSLATION.keys() else x

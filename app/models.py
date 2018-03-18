@@ -60,6 +60,14 @@ class BettingOdds(db.Model):
     team = db.relationship('Team', back_populates='betting_odds')
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
 
+    def date(self):
+        match = self.home_match or self.away_match
+        return (match and match.date) or None
+
+    def venue(self):
+        match = self.home_match or self.away_match
+        return (match and match.date) or None
+
     def __repr__(self):
         return (f'<BettingOdds(win_odds={self.win_odds}, point_spread={self.point_spread} ' +
                 f'home_match={self.home_match}, away_match={self.away_match}, team={self.team})>')
