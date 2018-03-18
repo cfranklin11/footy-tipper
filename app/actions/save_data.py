@@ -2,8 +2,8 @@ import os
 import sys
 import re
 from datetime import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, or_
+from sqlalchemy.orm import sessionmaker, aliased
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
@@ -32,6 +32,8 @@ class DataSaver():
 
         teams = session.query(Team).all()
 
+        # We have to save match first, because wheter we save betting odds is dependent
+        # on having a corresponding match
         if 'match' in self.data.keys():
             self.__save_match_data(session, teams)
         if 'betting_odds' in self.data.keys():
@@ -175,17 +177,19 @@ class DataSaver():
             db_match.away_score == scraped_match['away_score']
 
     def __save_betting_data(self, session, teams):
-        db_betting_odds = session.query(
-            BettingOdds
-        ).filter(
-            BettingOdds.date > datetime(datetime.now().year, 1, 1)
-        ).all()
-        db_matches = session.query(
-            Match
-        ).filter(
-            BettingOdds.date > datetime(datetime.now().year, 1, 1)
-        ).all()
-
+        HomeMatch = aliased(Match)
+        AwayMatch = aliased(Match)
+        # This class is for updating data during the season, so only matches/betting odds
+        # from this year are relevant
+        db_betting_odds = (session.query(BettingOdds)
+                                  .outerjoin(HomeMatch, BettingOdds.home_match)
+                                  .outerjoin(AwayMatch, BettingOdds.away_match)
+                                  .filter(or_(HomeMatch.date > datetime(2016, 1, 1),
+                                              AwayMatch.date > datetime(2016, 1, 1)))
+                                  .all())
+        db_matches = (session.query(Match)
+                             .filter(Match.date > datetime(datetime.now().year, 1, 1))
+                             .all())
         scraped_betting_odds = self.data['betting_odds'].to_dict('records')
 
         # Get list of tuples of duplicate scraped and db matches
@@ -193,14 +197,27 @@ class DataSaver():
             self.__duplicate_betting_odds(scraped_betting_odd, db_betting_odds)
             for scraped_betting_odd in scraped_betting_odds
         ]
-        # Convert list of tuples into two lists
-        db_duplicates, scraped_duplicates = zip(
-            *[duplicate for duplicate in duplicate_betting_odds if duplicate is not None]
-        )
+        duplicate_betting_odds = [
+            duplicate for duplicate in duplicate_betting_odds if duplicate is not None
+        ]
+
+        if len(duplicate_betting_odds) > 0:
+            # Convert list of tuples into two tuples containing first & second elements
+            # of each listed tuple
+            db_duplicates, scraped_duplicates = zip(
+                *[duplicate for duplicate in duplicate_betting_odds if duplicate is not None]
+            )
+        else:
+            db_duplicates, scraped_duplicates = (), ()
+
         betting_odds_to_save = [
             self.__betting_odds_to_save(scraped_betting_odd, db_matches, teams)
             for scraped_betting_odd in scraped_betting_odds
             if scraped_betting_odd not in scraped_duplicates
+        ]
+        betting_odds_to_save = [
+            betting_odd_to_save for betting_odd_to_save in betting_odds_to_save
+            if betting_odd_to_save is not None
         ]
         session.add_all(betting_odds_to_save)
 
@@ -211,8 +228,8 @@ class DataSaver():
         duplicate_db_betting_odds = [
             db_betting_odd for db_betting_odd in db_betting_odds
             # Have to convert DF date to datetime for equality comparison with DB datetime
-            if (db_betting_odd.home_match.date == betting_odds_date and
-                db_betting_odd.home_match.venue == scraped_betting_odd['venue'] and
+            if (db_betting_odd.date() == betting_odds_date and
+                db_betting_odd.venue() == scraped_betting_odd['venue'] and
                 db_betting_odd.team.name == scraped_betting_odd['team'])
         ]
 
@@ -231,16 +248,14 @@ class DataSaver():
         return (duplicate_db_betting_odds[0], scraped_betting_odd)
 
     def __betting_odds_to_save(self, scraped_betting_odd, db_matches, teams):
-        try:
-            betting_match = next((
-                match for match in db_matches if (
-                    match.date == datetime.combine(scraped_betting_odd['date'], datetime.min.time()) and
-                    match.venue == scraped_betting_odd['venue']
-                )
-            ))
-        except StopIteration:
-            # If the betting record has data but no associated match, raise an exception
-            raise(Exception(f'No match found for betting data: {scraped_betting_odd}'))
+        betting_match = [
+            match for match in db_matches
+            if (match.date == datetime.combine(scraped_betting_odd['date'], datetime.min.time()) and
+                match.venue == scraped_betting_odd['venue'])
+        ]
+
+        if len(betting_match) == 0:
+            return
 
         betting_team = next((
             team for team in teams if team.name == scraped_betting_odd['team']
@@ -251,10 +266,10 @@ class DataSaver():
             'team': betting_team
         }
 
-        if betting_team.id == betting_match.home_team_id:
-            betting_dict['home_match'] = betting_match
-        elif betting_team.id == betting_match.away_team_id:
-            betting_dict['away_match'] = betting_match
+        if betting_team.id == betting_match[0].home_team_id:
+            betting_dict['home_match'] = betting_match[0]
+        elif betting_team.id == betting_match[0].away_team_id:
+            betting_dict['away_match'] = betting_match[0]
         else:
             raise(Exception(
                 f'Betting data {scraped_betting_odd} does not match any existing ' +
@@ -267,16 +282,9 @@ class DataSaver():
         for idx, db_betting_odd in db_duplicates:
             scraped_betting_odd = scraped_duplicates[idx]
 
-            if (db_betting_odd.home_score == scraped_betting_odd['home_score'] and
-               db_betting_odd.away_score == scraped_betting_odd['away_score']):
+            if (db_betting_odd.win_odds == scraped_betting_odd['win_odds'] and
+               db_betting_odd.point_spread == scraped_betting_odd['point_spread']):
                 continue
-
-            if db_betting_odd.home_score > 0 or db_betting_odd.away_score > 0:
-                raise(Exception(
-                    'Expected older match data in DB to be the same as match data ' +
-                    f'scraped from webpages. Instead got {db_betting_odd} from DB ' +
-                    f'and {scraped_betting_odd} from webpage.'
-                ))
 
             db_betting_odd.win_odds = scraped_betting_odd['win_odds']
             db_betting_odd.point_spread = scraped_betting_odd['point_spread']
