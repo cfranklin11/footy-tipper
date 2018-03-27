@@ -35,9 +35,9 @@ class Match(db.Model):
 
     def __repr__(self):
         return (
-            f'<Match(date={self.date}, season_round={self.season_round}, ' +
-            f'home_team={self.home_team}, away_team={self.away_team}, venue={self.venue}, ' +
-            f'home_score={self.home_score}, away_score={self.away_score})>'
+            '<Match(date={}, season_round={}, '.format(self.date, self.season_round) +
+            'home_team={}, away_team={}, venue={}, '.format(self.home_team, self.away_team, self.venue) +
+            'home_score={}, away_score={})>'.format(self.home_score, self.away_score)
         )
 
 
@@ -69,8 +69,8 @@ class BettingOdds(db.Model):
         return (match and match.venue) or None
 
     def __repr__(self):
-        return (f'<BettingOdds(win_odds={self.win_odds}, point_spread={self.point_spread} ' +
-                f'home_match={self.home_match}, away_match={self.away_match}, team={self.team})>')
+        return ('<BettingOdds(win_odds={}, point_spread={} '.format(self.win_odds, self.point_spread) +
+                'home_match={}, away_match={}, team={})>'.format(self.home_match, self.away_match, self.team))
 
 
 class Team(db.Model):
@@ -94,5 +94,5 @@ class Team(db.Model):
     betting_odds = db.relationship('BettingOdds', back_populates='team', lazy='noload')
 
     def __repr__(self):
-        return (f'<Team(name={self.name}, home_matches={self.home_matches}, ' +
-                f'away_matches={self.away_matches}, betting_odds={self.betting_odds})>')
+        return ('<Team(name={}, home_matches={}, '.format(self.name, self.home_matches) +
+                'away_matches={}, betting_odds={})>'.format(self.away_matches, self.betting_odds))

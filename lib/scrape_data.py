@@ -83,7 +83,7 @@ async def scrape_pages(project_path, page_args):
 
     for page in PAGES:
         data = []
-        page_url = f'{DOMAIN}{PATH}{page}'
+        page_url = '{}{}{}'.format(DOMAIN, PATH, page)
 
         # Data for each season are on different pages, so looping back through years
         # until no data is returned.

@@ -63,7 +63,7 @@ class FitDataCreator(TimeStepDataCreator):
         unique_years = X.index.get_level_values(1).drop_duplicates()
 
         if len(unique_years) < 2:
-            raise(Exception(f'There are only {len(unique_years)} years worth ' +
+            raise(Exception("There are only {} year's worth ".format(len(unique_years)) +
                             'of data. Need at least 2 to allow for time-step reshaping.'))
 
         train_start = self._train_start(unique_years)
@@ -94,7 +94,7 @@ class PredictDataCreator(TimeStepDataCreator):
             unique_years = X.index.get_level_values(1).drop_duplicates()
 
             if len(unique_years) < 2:
-                raise(Exception(f'There are only {len(unique_years)} years worth ' +
+                raise(Exception("There are only {} year's worth ".format(len(unique_years)) +
                                 'of data. Need at least 2 to allow for time-step reshaping.'))
 
             train_start = self._train_start(unique_years) if self.full_year else None

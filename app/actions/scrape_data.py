@@ -33,7 +33,7 @@ class PageScraper():
 
         for page in PAGES:
             if page == 'ft_match_list' or self.footywire:
-                page_url = f'{DOMAIN}{PATH}{page}'
+                page_url = '{}{}{}'.format(DOMAIN, PATH, page)
                 soup = self.__fetch_page_data(page_url, params={'year': str(self._year)})
                 data_div = soup.find('div', class_='datadiv')
             else:
@@ -41,7 +41,7 @@ class PageScraper():
                 data_div = soup.find('div', class_='float-left seasonal-pricing')
 
             if data_div is None:
-                raise(Exception(f"Couldn't find div with class 'datadiv' on {page}"))
+                raise(Exception("Couldn't find div with class 'datadiv' on {}".format(page)))
 
             if page == 'ft_match_list':
                 data = self.__fixture_data(data_div)

@@ -73,8 +73,8 @@ class RNNBinaryClassifier(BaseEstimator, ClassifierMixin):
                             'to avoid data shape errors.')
         if type(cell_size) == list and len(cell_size) != n_hidden_layers + 1:
             raise Exception('cell_size must be an integer or a list with length' +
-                            f'equal to number of layers. cell_size has {len(cell_size)} ' +
-                            f'values and there are {n_hidden_layers + 1} layers in this model.')
+                            'equal to number of layers. cell_size has {} '.format(len(cell_size)) +
+                            'values and there are {} layers in this model.'.format(n_hidden_layers + 1))
 
         self.n_teams = n_teams
         self.n_years = n_years
@@ -242,7 +242,8 @@ class RNNBinaryClassifier(BaseEstimator, ClassifierMixin):
             models.save_model(self.model, f.name, overwrite=True)
             model_str = f.read()
         d = {key: value for key, value in self.__dict__.items() if key != 'model'}
-        return {**{'model_str': model_str}, **d}
+        d.update({'model_str': model_str})
+        return d
 
     def __setstate__(self, state):
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=True) as f:
@@ -250,7 +251,8 @@ class RNNBinaryClassifier(BaseEstimator, ClassifierMixin):
             f.flush()
             model = models.load_model(f.name)
         d = {value: key for value, key in state.items() if key != 'model_str'}
-        self.__dict__ = {**{'model': model}, **d}
+        d.update({'model': model})
+        self.__dict__ = d
 
     def __inputs(self, X):
         """
@@ -360,7 +362,7 @@ class RNNBinaryClassifier(BaseEstimator, ClassifierMixin):
                 dropout=self.dropout,
                 recurrent_dropout=self.recurrent_dropout,
                 return_sequences=layer_n < self.n_hidden_layers - 1,
-                name=f'lstm_{idx + 2}'
+                name='lstm_{}'.format(idx + 2)
             )(lstm)
 
         output = layers.Dense(2, activation='softmax')(lstm)
@@ -540,7 +542,7 @@ class TimeStepBinaryClassifier(BaseEstimator, ClassifierMixin):
 class TimeStepVotingClassifier(_BaseComposition, ClassifierMixin, TransformerMixin):
     def __init__(self, estimators, weights=None):
         if weights is not None and len(estimators) != len(weights):
-            raise(Exception(f'estimators ({len(estimators)}) and weights ({len(weights)}) ' +
+            raise(Exception('estimators ({}) and weights ({len(weights)}) '.format(len(estimators)) +
                             'arguments are different lengths.'))
 
         self.estimators = [

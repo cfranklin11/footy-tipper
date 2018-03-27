@@ -177,7 +177,7 @@ class MatchData():
     def __get_round_number(self, x):
         digits = DIGITS.search(x)
         if digits is not None:
-            return int(digits[1])
+            return int(digits.group(1))
         if QUALIFYING.search(x) is not None:
             return 25
         if ELIMINATION.search(x) is not None:
