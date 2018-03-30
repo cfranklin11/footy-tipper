@@ -42,6 +42,10 @@ class ModelData():
             # TimeStepVotingClassifier expects data from this year & previous year,
             # and reshapes the data per n_steps param of each model
             full_df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
+            # TimeStepVotingClassifer expects at least two years' worth of data,
+            # so if there's no data for this year, use data from last year and the year before
+            if len(full_df['year'].drop_duplicates()) == 1:
+                full_df = DBData(db_url).data(year_range=(this_year - 2, this_year)).sort_index()
 
         self.df = CumulativeFeatureBuilder().transform(full_df.drop('win', axis=1), y=full_df['win'])
 
