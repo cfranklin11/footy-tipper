@@ -44,8 +44,6 @@ def predict():
     from app.estimators.estimator import Estimator
     from app.actions.send_mail import PredictionsMailer
 
-    print(request.args.get('password'))
-
     if request.args.get('password') == app.config['PASSWORD']:
         X, y = ModelData(app.config['DATABASE_URL']).prediction_data()
         predictions = Estimator().predict(X, y)
