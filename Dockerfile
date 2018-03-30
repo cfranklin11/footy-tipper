@@ -19,7 +19,8 @@ RUN cd /usr/local/include \
   && cd /
 
 # Install packages needed to install Boost library, then install Boost library for python3
-# (From https://github.com/lballabio/dockerfiles/blob/master/boost/Dockerfile)
+# (From https://github.com/lballabio/dockerfiles/blob/master/boost/Dockerfile and
+# https://eb2.co/blog/2012/03/building-boost.python-for-python-3.2/)
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential wget libbz2-dev \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
@@ -40,4 +41,4 @@ RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
 EXPOSE 5000
 
 # Run run.py when the container launches
-CMD ["python3", "run.py"]
+CMD gunicorn run:app
