@@ -65,10 +65,14 @@ class DataSaver():
         # Get list of tuples of duplicate scraped and db matches
         duplicate_matches = [self.__duplicate_matches(scraped_match, db_matches)
                              for scraped_match in scraped_matches]
-        # Convert list of tuples into two lists
-        db_duplicates, scraped_duplicates = zip(
-            *[duplicate for duplicate in duplicate_matches if duplicate is not None]
-        )
+        duplicate_matches = [duplicate for duplicate in duplicate_matches if duplicate is not None]
+
+        if len(duplicate_matches) > 0:
+            # Convert list of tuples into two lists
+            db_duplicates, scraped_duplicates = zip(*duplicate_matches)
+        else:
+            db_duplicates, scraped_duplicates = (), ()
+
         matches_to_save = [
             self.__match_to_save(scraped_match, teams)
             for scraped_match in scraped_matches
