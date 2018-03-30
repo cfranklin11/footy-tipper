@@ -12,6 +12,8 @@ gunicorn
 requests
 sendgrid
 h5py
+redis
+rq
 
 numpy
 pandas
