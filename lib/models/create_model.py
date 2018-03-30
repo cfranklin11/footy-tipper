@@ -143,12 +143,11 @@ def main(project_path, train_start=None, train_end=None):
             time_step_model
         )
 
-        voters.append((f'{model_name}_pipeline', X_pipeline))
-        model_params = {
-            **model_params,
-            **{f'{model_name}_pipeline__{param_middle}__{key}': value
-               for key, value in BEST_PARAMS[model_name].items()}
-        }
+        voters.append(('{}_pipeline'.format(model_name), X_pipeline))
+        model_params.update(
+            {'{}_pipeline__{}__{}'.format(model_name, param_middle, key): value
+             for key, value in BEST_PARAMS[model_name].items()}
+        )
 
     vc = TimeStepVotingClassifier(voters)
     vc.set_params(**model_params)
@@ -156,8 +155,8 @@ def main(project_path, train_start=None, train_end=None):
     model_name = vc.__class__.__name__
     first_year = train_start or X_train['year'].min()
     last_year = train_end or X_train['year'].max()
-    print(f'\n\nTraining {model_name} on data from {first_year + 1} ' +
-          f'(with lead-in data from {first_year}) to {last_year}\n')
+    print('\n\nTraining {} on data from {first_year + 1} '.format(model_name) +
+          '(with lead-in data from {}) to {}\n'.format(first_year, last_year))
 
     # y_train needs extra columns to allow for data reshaping with lead-in year
     # (in case of n_steps reshaping only, y_train just needs 'team' column)
@@ -170,7 +169,7 @@ def main(project_path, train_start=None, train_end=None):
 
     joblib.dump(vc, os.path.join(
         model_directory_path,
-        f'{model_name}_{str(datetime.now().date())}_{first_year}_to_{last_year}.pkl'
+        '{}_{str(datetime.now().date())}_{}_to_{}.pkl'.format(model_name, first_year, last_year)
     ))
 
     print('\n\nFinished:', datetime.now().strftime('%H:%M:%S'), '\n')

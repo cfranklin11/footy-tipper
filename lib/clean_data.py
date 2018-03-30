@@ -183,7 +183,7 @@ def main(page, data, csv=False):
     elif page == 'afl_betting':
         df = clean_betting_data(data)
     else:
-        raise Exception(f'Unknown page: {page}')
+        raise Exception('Unknown page: {}'.format(page))
 
     if csv:
         project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -192,6 +192,6 @@ def main(page, data, csv=False):
         if not os.path.isdir(data_directory):
             os.makedirs(data_directory)
 
-        df.to_csv(os.path.join(data_directory, f'{page}.csv'), index=False)
+        df.to_csv(os.path.join(data_directory, '{}.csv'.format(page)), index=False)
 
     return df

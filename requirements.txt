@@ -1,5 +1,5 @@
 flask
-psycopg2
+psycopg2-binary
 flask_sqlalchemy
 flask_script
 flask_migrate
@@ -11,6 +11,7 @@ python-dotenv
 gunicorn
 requests
 sendgrid
+h5py
 
 numpy
 pandas

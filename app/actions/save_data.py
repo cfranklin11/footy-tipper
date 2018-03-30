@@ -65,10 +65,14 @@ class DataSaver():
         # Get list of tuples of duplicate scraped and db matches
         duplicate_matches = [self.__duplicate_matches(scraped_match, db_matches)
                              for scraped_match in scraped_matches]
-        # Convert list of tuples into two lists
-        db_duplicates, scraped_duplicates = zip(
-            *[duplicate for duplicate in duplicate_matches if duplicate is not None]
-        )
+        duplicate_matches = [duplicate for duplicate in duplicate_matches if duplicate is not None]
+
+        if len(duplicate_matches) > 0:
+            # Convert list of tuples into two lists
+            db_duplicates, scraped_duplicates = zip(*duplicate_matches)
+        else:
+            db_duplicates, scraped_duplicates = (), ()
+
         matches_to_save = [
             self.__match_to_save(scraped_match, teams)
             for scraped_match in scraped_matches
@@ -87,7 +91,7 @@ class DataSaver():
     def __get_finals_round_number(self, season_round):
         digits = DIGITS.search(season_round)
         if digits is not None:
-            return int(digits[1])
+            return int(digits.group(1))
         if QUALIFYING.search(season_round) is not None:
             return 25
         if ELIMINATION.search(season_round) is not None:
@@ -113,7 +117,7 @@ class DataSaver():
 
             if len(last_round_played) > 1:
                 raise(Exception(
-                    f'More than one season found on date {last_date_played}: {last_round_played}'
+                    'More than one season found on date {}: {}'.format(last_date_played, last_round_played)
                 ))
 
             return int(last_round_played[0])
@@ -134,7 +138,7 @@ class DataSaver():
 
         if len(duplicate_db_matches) > 1:
             raise(Exception('Unexpected duplication of match date and venue in DB matches. ' +
-                            f'Expected 0 or 1, but found {len(duplicate_db_matches)} records.'))
+                            'Expected 0 or 1, but found {} records.'.format(len(duplicate_db_matches))))
 
         return (duplicate_db_matches[0], scraped_match)
 
@@ -143,7 +147,7 @@ class DataSaver():
         if (scraped_match['round_number'] == self._last_round_number_played + 1 and
            (scraped_match['home_score'] != 0 or scraped_match['away_score'] != 0)):
             raise(Exception('Expected scores from matches from this round to be 0. ' +
-                            f'Instead got {scraped_match}'))
+                            'Instead got {}'.format(scraped_match)))
 
         match_dict = {
             'date': scraped_match['date'],
@@ -168,8 +172,8 @@ class DataSaver():
             if db_match.home_score > 0 or db_match.away_score > 0:
                 raise(Exception(
                     'Expected older match data in DB to be the same as match data ' +
-                    f'scraped from webpages. Instead got {db_match} from DB ' +
-                    f'and {scraped_match} from webpage.'
+                    'scraped from webpages. Instead got {} from DB '.format(db_match) +
+                    'and {} from webpage.'.format(scraped_match)
                 ))
 
             # Update last week's match data with scores
@@ -220,6 +224,7 @@ class DataSaver():
             betting_odd_to_save for betting_odd_to_save in betting_odds_to_save
             if betting_odd_to_save is not None
         ]
+
         session.add_all(betting_odds_to_save)
 
         self.__update_db_betting_odds(db_duplicates, scraped_duplicates)
@@ -244,7 +249,7 @@ class DataSaver():
 
         if len(duplicate_db_betting_odds) > 1:
             raise(Exception('Unexpected duplication of betting date, venue, and team in DB betting odds. ' +
-                            f'Expected 0 or 1, but found {len(duplicate_db_betting_odds)} records.'))
+                            'Expected 0 or 1, but found {} records.'.format(len(duplicate_db_betting_odds))))
 
         return (duplicate_db_betting_odds[0], scraped_betting_odd)
 
@@ -273,7 +278,7 @@ class DataSaver():
             betting_dict['away_match'] = betting_match[0]
         else:
             raise(Exception(
-                f'Betting data {scraped_betting_odd} does not match any existing ' +
+                'Betting data {} does not match any existing '.format(scraped_betting_odd) +
                 'team/match combinations'
             ))
 

@@ -45,7 +45,7 @@ def seed_betting_odds(session, teams, matches):
         elif betting_team.id == betting_match.away_team_id:
             betting['away_match'] = betting_match
         else:
-            raise(f'Betting data {betting_record} does not match any existing ' +
+            raise('Betting data {} does not match any existing '.format(betting_record) +
                   'team/match combinations')
 
         session.add(BettingOdds(**betting))

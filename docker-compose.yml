@@ -1,0 +1,19 @@
+
+version: '3.1'
+services:
+  web:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgres://postgres@db:5432/footytipper
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=footytipper

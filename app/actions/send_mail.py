@@ -19,7 +19,7 @@ class PredictionsMailer():
     def send(self, email_recipient, content):
         from_email = Email(EMAIL_FROM)
         to_email = Email(email_recipient)
-        subject = f'Footy Tips for {datetime.now().date()}'
+        subject = 'Footy Tips for {}'.format(datetime.now().date())
         content = Content("text/plain", content)
         mail = Mail(from_email, subject, to_email, content)
 

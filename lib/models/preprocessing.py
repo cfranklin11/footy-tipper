@@ -145,10 +145,10 @@ class TimeStepReshaper(BaseEstimator, TransformerMixin):
         ])
 
         if len(segmented_arrays.shape) == 1 and type(segmented_arrays[0]) == list:
-            raise(Exception(f'segmented_arrays is an array of {len(segmented_arrays)} lists, ' +
+            raise(Exception('segmented_arrays is an array of {} lists, '.format(len(segmented_arrays)) +
                             'not a 3D matrix. Make sure that the set of segment values ' +
-                            f'(count = {len(segmented_arrays)}) is correct and ' +
-                            f'divides evenly into total rows ({len(X)})'))
+                            '(count = {}) is correct and '.format(len(segmented_arrays)) +
+                            'divides evenly into total rows ({})'.format(len(X))))
 
         return segmented_arrays
 
