@@ -187,7 +187,7 @@ class DataCleaner():
               # Season round and date data is in first column ('team'), so we extract
               # them, then drop NaNs
                 .assign(season_round=self.__get_season_round('team'),
-                        date=lambda x: pd.to_datetime(x['team'], errors='coerce'),
+                        date=lambda x: pd.to_datetime(x['team'], errors='coerce', dayfirst=True),
                         point_spread=lambda x: (
                             x['line_odds'].str.split(' @ ', expand=True)[0].astype(float)))
                 .drop('line_odds', axis=1)

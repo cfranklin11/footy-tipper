@@ -66,7 +66,7 @@ class BettingOdds(db.Model):
 
     def venue(self):
         match = self.home_match or self.away_match
-        return (match and match.date) or None
+        return (match and match.venue) or None
 
     def __repr__(self):
         return (f'<BettingOdds(win_odds={self.win_odds}, point_spread={self.point_spread} ' +

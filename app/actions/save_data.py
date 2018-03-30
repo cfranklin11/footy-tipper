@@ -177,6 +177,7 @@ class DataSaver():
             db_match.away_score == scraped_match['away_score']
 
     def __save_betting_data(self, session, teams):
+        current_year = datetime.now().year
         HomeMatch = aliased(Match)
         AwayMatch = aliased(Match)
         # This class is for updating data during the season, so only matches/betting odds
@@ -184,11 +185,11 @@ class DataSaver():
         db_betting_odds = (session.query(BettingOdds)
                                   .outerjoin(HomeMatch, BettingOdds.home_match)
                                   .outerjoin(AwayMatch, BettingOdds.away_match)
-                                  .filter(or_(HomeMatch.date > datetime(2016, 1, 1),
-                                              AwayMatch.date > datetime(2016, 1, 1)))
+                                  .filter(or_(HomeMatch.date > datetime(current_year, 1, 1),
+                                              AwayMatch.date > datetime(current_year, 1, 1)))
                                   .all())
         db_matches = (session.query(Match)
-                             .filter(Match.date > datetime(datetime.now().year, 1, 1))
+                             .filter(Match.date > datetime(current_year, 1, 1))
                              .all())
         scraped_betting_odds = self.data['betting_odds'].to_dict('records')
 
@@ -279,7 +280,7 @@ class DataSaver():
         return BettingOdds(**betting_dict)
 
     def __update_db_betting_odds(self, db_duplicates, scraped_duplicates):
-        for idx, db_betting_odd in db_duplicates:
+        for idx, db_betting_odd in enumerate(db_duplicates):
             scraped_betting_odd = scraped_duplicates[idx]
 
             if (db_betting_odd.win_odds == scraped_betting_odd['win_odds'] and
