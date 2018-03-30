@@ -224,6 +224,7 @@ class DataSaver():
             betting_odd_to_save for betting_odd_to_save in betting_odds_to_save
             if betting_odd_to_save is not None
         ]
+
         session.add_all(betting_odds_to_save)
 
         self.__update_db_betting_odds(db_duplicates, scraped_duplicates)
