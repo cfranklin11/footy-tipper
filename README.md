@@ -1,6 +1,6 @@
 # README #
 
 ## Setting up the app  in Docker
-* Create image and run app: `docker-compose up -d`
+* Run app only: `docker run -p 5000:5000 -e PORT=5000 <image-name>`
 * Create DB data tables: `docker-compose run python3 db/manage.py db upgrade`
 * Seed data: `docker-compose run python3 db/seeds.py`

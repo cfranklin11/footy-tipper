@@ -3,6 +3,8 @@ import sys
 from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+from rq import Queue
+from app.worker import conn
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
@@ -31,6 +33,7 @@ app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
 app.config['EMAIL_RECIPIENT'] = os.environ.get('EMAIL_RECIPIENT')
 
 db = SQLAlchemy(app)
+q = Queue(connection=conn)
 
 
 @app.route('/')
@@ -40,25 +43,16 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    from app.actions.prepare_model_data import ModelData
-    from app.estimators.estimator import Estimator
-    from app.actions.send_mail import PredictionsMailer
+    from flask import jsonify
+    from app.actions.predict import Predictor
 
     if request.args.get('password') == app.config['PASSWORD']:
-        X, y = ModelData(app.config['DATABASE_URL']).prediction_data()
-        predictions = Estimator().predict(X, y)
-
         if app.config['PRODUCTION']:
-            response = PredictionsMailer(
-                app.config['SENDGRID_API_KEY']
-            ).send(
-                app.config['EMAIL_RECIPIENT'], str(predictions)
-            )
-
-            return (response.body, response.status_code, response.headers.items())
+            q.enqueue_call(func=Predictor().predict)
+            return ('Prediction job is in queue. You will receive an e-mail shortly.\n', 200)
         else:
-            import json
-            return json.dumps(predictions)
+            predictions = Predictor().predict()
+            return jsonify(predictions)
     else:
         abort(401)
 
@@ -74,6 +68,6 @@ def update():
         dfs = DataCleaner(data).data()
         DataSaver(dfs).save_data()
 
-        return ('New data was successfully saved.', 200)
+        return ('New data was successfully saved.\n', 200)
     else:
         abort(401)
