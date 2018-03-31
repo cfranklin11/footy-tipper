@@ -4,7 +4,6 @@ from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from rq import Queue
-from rq.job import Job
 from app.worker import conn
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -48,8 +47,12 @@ def predict():
     from app.actions.predict import Predictor
 
     if request.args.get('password') == app.config['PASSWORD']:
-        predictions = Predictor().predict()
-        return jsonify(predictions)
+        if app.config['PRODUCTION']:
+            q.enqueue_call(func=Predictor().predict)
+            return ('Prediction job is in queue. You will receive an e-mail shortly.\n', 200)
+        else:
+            predictions = Predictor().predict()
+            return jsonify(predictions)
     else:
         abort(401)
 
@@ -65,6 +68,6 @@ def update():
         dfs = DataCleaner(data).data()
         DataSaver(dfs).save_data()
 
-        return ('New data was successfully saved.', 200)
+        return ('New data was successfully saved.\n', 200)
     else:
         abort(401)

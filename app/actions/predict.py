@@ -22,6 +22,6 @@ class Predictor():
             ).send(
                 app.config['EMAIL_RECIPIENT'], str(predictions)
             )
-            return response
+            print(response)
         else:
             return predictions
