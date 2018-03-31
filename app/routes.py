@@ -4,12 +4,12 @@ from flask import Flask, render_template, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from rq import Queue
-from app.worker import conn
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_path not in sys.path:
     sys.path.append(project_path)
 
+from app.worker import conn
 import config
 
 app = Flask(__name__)
@@ -48,8 +48,9 @@ def predict():
 
     if request.args.get('password') == app.config['PASSWORD']:
         if app.config['PRODUCTION']:
-            q.enqueue_call(func=Predictor().predict)
-            return ('Prediction job is in queue. You will receive an e-mail shortly.\n', 200)
+            job = q.enqueue(Predictor().predict)
+            return ('Prediction job #{} is in queue. '.format(job.get_id()) +
+                    'You will receive an e-mail shortly.\n', 200)
         else:
             predictions = Predictor().predict()
             return jsonify(predictions)

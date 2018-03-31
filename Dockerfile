@@ -38,11 +38,11 @@ RUN wget https://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.
 RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
 
 # Add our code
-ADD ./ /app/
+ADD ./ /app
 WORKDIR /app
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
 
-# Run run.py when the container launches
-CMD gunicorn --bind 0.0.0.0:$PORT run:app
+# Run app with 1 worker process
+CMD gunicorn --bind 0.0.0.0:$PORT -w=1 run:app & python3 app/worker.py
