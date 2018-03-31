@@ -9,16 +9,16 @@ services:
       - .:/app
     depends_on:
       - db
-      - redis
+      - redis_db
     ports:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgres://postgres@db:5432/footytipper
       - PORT=5000
-      - REDIS_URL=redis://localhost:6379
+      - REDIS_URL=redis://redis_db:6379
   db:
     image: postgres
     environment:
       - POSTGRES_DB=footytipper
-  redis:
+  redis_db:
     image: redis
