@@ -153,11 +153,6 @@ class MatchData():
             [1, 2, 0]
         ).sort_index()
 
-        # stacked_df.loc[:, 'year'] = stacked_df['year'].astype(int)
-        # stacked_df.loc[:, 'home_team'] = stacked_df['home_team'].astype(int)
-        # stacked_df.loc[:, 'oppo_score'] = stacked_df['oppo_score'].astype(int)
-        # stacked_df.loc[:, 'score'] = stacked_df['score'].astype(int)
-
         # Convert 0s in category columns to strings for later transformations
         string_cols = match_df.select_dtypes([object]).columns.values
         match_df.loc[:, string_cols] = match_df[string_cols].astype(str)
