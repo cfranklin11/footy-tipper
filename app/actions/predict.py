@@ -1,5 +1,6 @@
 import os
 import sys
+from flask import render_template
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 if project_path not in sys.path:
@@ -17,11 +18,11 @@ class Predictor():
         predictions = Estimator().predict(X, y)
 
         if app.config['PRODUCTION']:
-            response = PredictionsMailer(
-                app.config['SENDGRID_API_KEY']
-            ).send(
-                app.config['EMAIL_RECIPIENT'], str(predictions)
-            )
-            print(response)
-        else:
-            return predictions
+            with app.app_context():
+                (PredictionsMailer(app.config['SENDGRID_API_KEY'])
+                    .send(app.config['EMAIL_RECIPIENT'], self.__email_body(predictions)))
+
+        return predictions
+
+    def __email_body(self, predictions):
+        return render_template('email.html', predictions=predictions)

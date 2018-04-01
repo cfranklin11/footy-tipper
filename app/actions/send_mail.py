@@ -20,7 +20,7 @@ class PredictionsMailer():
         from_email = Email(EMAIL_FROM)
         to_email = Email(email_recipient)
         subject = 'Footy Tips for {}'.format(datetime.now().date())
-        content = Content("text/plain", content)
+        content = Content("text/html", content)
         mail = Mail(from_email, subject, to_email, content)
 
         return self.client.mail.send.post(request_body=mail.get())

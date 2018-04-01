@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h3>Tips for Round {{ predictions[0]['round_number'] }}</h3>
+  <table>
+    <thead>
+      <th>Home Team</th>
+      <th>Away Team</th>
+      <th>Home Win Predicted</th>
+    </thead>
+    <tbody>
+      {% for prediction in predictions %}
+        <tr>
+          {% if prediction['home_win_predicted'] == 1 %}
+            <td><strong>{{ prediction['home_team'] }}<strong></td>
+            <td>{{ prediction['away_team'] }}</td>
+          {% else %}
+            <td>{{ prediction['home_team'] }}</td>
+            <td><strong>{{ prediction['away_team'] }}<strong></td>
+          {% endif %}
+          <td>{{ prediction['home_win_predicted'] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
