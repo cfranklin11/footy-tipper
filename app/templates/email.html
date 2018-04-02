@@ -3,6 +3,7 @@
   <h3>Tips for Round {{ predictions[0]['round_number'] }}</h3>
   <table>
     <thead>
+      <th>Date</th>
       <th>Home Team</th>
       <th>Away Team</th>
       <th>Home Win Predicted</th>
@@ -10,6 +11,7 @@
     <tbody>
       {% for prediction in predictions %}
         <tr>
+          <td>{{ prediction['full_date'] }}</td>
           {% if prediction['home_win_predicted'] == 1 %}
             <td><strong>{{ prediction['home_team'] }}<strong></td>
             <td>{{ prediction['away_team'] }}</td>

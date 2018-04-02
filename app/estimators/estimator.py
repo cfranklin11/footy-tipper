@@ -20,13 +20,12 @@ class Estimator():
 
         y_pred_proba = estimator.predict_proba(X)
         pred_home_win = self.__compare_teams(X, y, y_pred_proba)
-        pred_df = pd.concat(
-            [X[['round_number', 'team', 'oppo_team']], pred_home_win], axis=1
-        ).dropna()
+        pred_df = (pd.concat([X[['round_number', 'team', 'oppo_team']], pred_home_win], axis=1)
+                     .dropna())
         pred_df.columns = ['round_number', 'home_team', 'away_team', 'home_win_predicted']
         max_round = pred_df['round_number'].max()
 
-        return pred_df[pred_df['round_number'] == max_round].to_dict('records')
+        return pred_df[pred_df['round_number'] == max_round]
 
     def __compare_teams(self, X, y, y_pred_proba):
         X_years = X['year'].drop_duplicates()
