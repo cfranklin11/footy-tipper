@@ -37,15 +37,22 @@ class ModelData():
             # on Heroku
             csv_df = CSVData(os.path.join(project_path, 'data')).data(max_year=min_year - 1)
             full_df = csv_df.append(db_df).sort_index().fillna(0)
+            self._df_dates = None
         else:
             this_year = datetime.now().year
             # TimeStepVotingClassifier expects data from this year & previous year,
             # and reshapes the data per n_steps param of each model
-            full_df = DBData(db_url).data(year_range=(this_year - 1, this_year)).sort_index()
+            full_df, df_dates = DBData(db_url).data(year_range=(this_year - 1, this_year),
+                                                    return_dates=True)
+            full_df.sort_index(inplace=True)
             # TimeStepVotingClassifer expects at least two years' worth of data,
             # so if there's no data for this year, use data from last year and the year before
             if len(full_df['year'].drop_duplicates()) == 1:
-                full_df = DBData(db_url).data(year_range=(this_year - 2, this_year)).sort_index()
+                full_df, df_dates = DBData(db_url).data(year_range=(this_year - 2, this_year),
+                                                        return_dates=True)
+                full_df.sort_index(inplace=True)
+
+            self._df_dates = df_dates
 
         self.df = CumulativeFeatureBuilder().transform(full_df.drop('win', axis=1), y=full_df['win'])
 
@@ -54,13 +61,13 @@ class ModelData():
 
     def prediction_data(self):
         X = self.__team_df(self.df).drop('win', axis=1)
-        y = self.__team_df(
-            self.df[['team', 'year', 'round_number', 'venue', 'win']]
-        ).drop(
-            ['year', 'round_number', 'venue'], axis=1
-        )
+        y = (self.__team_df(self.df[['team', 'year', 'round_number', 'venue', 'win']])
+                 .drop(['year', 'round_number', 'venue'], axis=1))
 
-        return X, y
+        if self._df_dates is None:
+            return X, y
+
+        return X, y, self._df_dates
 
     def __team_df(self, df):
         unique_teams = df.index.get_level_values(0).drop_duplicates()
@@ -152,11 +159,6 @@ class MatchData():
         ).reorder_levels(
             [1, 2, 0]
         ).sort_index()
-
-        # stacked_df.loc[:, 'year'] = stacked_df['year'].astype(int)
-        # stacked_df.loc[:, 'home_team'] = stacked_df['home_team'].astype(int)
-        # stacked_df.loc[:, 'oppo_score'] = stacked_df['oppo_score'].astype(int)
-        # stacked_df.loc[:, 'score'] = stacked_df['score'].astype(int)
 
         # Convert 0s in category columns to strings for later transformations
         string_cols = match_df.select_dtypes([object]).columns.values
@@ -250,7 +252,7 @@ class DBData(MatchData):
     def __init__(self, db_url):
         self.db_url = db_url
 
-    def data(self, year_range=(0, None)):
+    def data(self, year_range=(0, None), return_dates=False):
         engine = create_engine(self.db_url)
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -260,6 +262,9 @@ class DBData(MatchData):
         clean_df = self.clean_match_df(df)
 
         session.close()
+
+        if return_dates:
+            return clean_df.drop('full_date', axis=1), clean_df['full_date']
 
         return clean_df.drop('full_date', axis=1)
 
