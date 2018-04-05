@@ -125,10 +125,12 @@ class DataSaver():
             return 0
 
     def __duplicate_matches(self, scraped_match, db_matches):
+        scraped_match_datetime = datetime.combine(scraped_match['date'], datetime.min.time())
         duplicate_db_matches = [
             db_match for db_match in db_matches if (
-                # Have to convert DF date to datetime for equality comparison with DB datetime
-                db_match.date == datetime.combine(scraped_match['date'], datetime.min.time()) and
+                # Different date/datetime formats confound equality checks, so using datetime.combine
+                # to guarantee consistency
+                datetime.combine(db_match.date, datetime.min.time()) == scraped_match_datetime and
                 db_match.venue == scraped_match['venue']
             )
         ]
@@ -230,11 +232,13 @@ class DataSaver():
         self.__update_db_betting_odds(db_duplicates, scraped_duplicates)
 
     def __duplicate_betting_odds(self, scraped_betting_odd, db_betting_odds):
-        betting_odds_date = datetime.combine(scraped_betting_odd['date'], datetime.min.time())
+        betting_odds_datetime = datetime.combine(scraped_betting_odd['date'],
+                                                 datetime.min.time())
         duplicate_db_betting_odds = [
             db_betting_odd for db_betting_odd in db_betting_odds
-            # Have to convert DF date to datetime for equality comparison with DB datetime
-            if (db_betting_odd.date() == betting_odds_date and
+            # Different date/datetime formats confound equality checks, so using datetime.combine
+            # to guarantee consistency
+            if (datetime.combine(db_betting_odd.date(), datetime.min.time()) == betting_odds_datetime and
                 db_betting_odd.venue() == scraped_betting_odd['venue'] and
                 db_betting_odd.team.name == scraped_betting_odd['team'])
         ]
@@ -254,8 +258,7 @@ class DataSaver():
         return (duplicate_db_betting_odds[0], scraped_betting_odd)
 
     def __betting_odds_to_save(self, scraped_betting_odd, db_matches, teams):
-        betting_odd_datetime = datetime.combine(scraped_betting_odd['date'],
-                                                datetime.min.time())
+        betting_odd_datetime = datetime.combine(scraped_betting_odd['date'], datetime.min.time())
         betting_match = [
             match for match in db_matches
             # Different date/datetime formats confound equality checks, so using datetime.combine
