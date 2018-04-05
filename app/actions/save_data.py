@@ -143,7 +143,7 @@ class DataSaver():
         return (duplicate_db_matches[0], scraped_match)
 
     def __match_to_save(self, scraped_match, teams):
-        # Raise exception if it's this week's round, but the score's aren't 0
+        # Raise exception if it's this week's round, but the scores aren't 0
         if (scraped_match['round_number'] == self._last_round_number_played + 1 and
            (scraped_match['home_score'] != 0 or scraped_match['away_score'] != 0)):
             raise(Exception('Expected scores from matches from this round to be 0. ' +
@@ -254,9 +254,13 @@ class DataSaver():
         return (duplicate_db_betting_odds[0], scraped_betting_odd)
 
     def __betting_odds_to_save(self, scraped_betting_odd, db_matches, teams):
+        betting_odd_datetime = datetime.combine(scraped_betting_odd['date'],
+                                                datetime.min.time())
         betting_match = [
             match for match in db_matches
-            if (match.date == datetime.combine(scraped_betting_odd['date'], datetime.min.time()) and
+            # Different date/datetime formats confound equality checks, so using datetime.combine
+            # to guarantee consistency
+            if (datetime.combine(match.date, datetime.min.time()) == betting_odd_datetime and
                 match.venue == scraped_betting_odd['venue'])
         ]
 

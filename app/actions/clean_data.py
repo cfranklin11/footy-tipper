@@ -183,7 +183,7 @@ class DataCleaner():
     def __clean_lb_betting_data(self, data, match_df):
         df = (pd.DataFrame(data)
                 .iloc[:, LB_BETTING_COL_INDICES]
-                .rename(LB_BETTING_COL_NAMES, axis=1)
+                .rename(columns=LB_BETTING_COL_NAMES)
               # Season round and date data is in first column ('team'), so we extract
               # them, then drop NaNs
                 .assign(season_round=self.__get_season_round('team'),

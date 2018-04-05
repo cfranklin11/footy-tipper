@@ -20,6 +20,7 @@ elif os.getenv('TESTING'):
     app.config.from_object(config.TestingConfig)
     dotenv_path = os.path.join(os.path.dirname(__file__), '../.env.test')
     load_dotenv(dotenv_path)
+    os.environ['DATABASE_URL'] = 'sqlite:///' + os.path.join(project_path, 'test.db')
 else:
     app.config.from_object(config.DevelopmentConfig)
     dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')

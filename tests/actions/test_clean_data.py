@@ -19,7 +19,7 @@ class TestDataCleaner(unittest.TestCase):
         with open(os.path.join(project_path, 'tests/fixtures/scraped_data.json'), 'r') as f:
             page_data = json.load(f)
 
-        data = self.described_class(page_data).data()
+        data = self.described_class(page_data, footywire=True).data()
 
         self.assertEqual(type(data), dict)
         self.assertEqual(len(data.keys()), 2)
