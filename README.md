@@ -6,4 +6,4 @@
 * Seed data: `docker-compose run python3 db/seeds.py`
 
 ## Running tests in Docker
-* `docker-compose run -p 8000 --rm web pytest`
+* `docker-compose run --rm web pytest`
