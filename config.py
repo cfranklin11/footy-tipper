@@ -5,9 +5,6 @@ class Config(object):
     PRODUCTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CSRF_ENABLED = True
-    SQLALCHEMY_BINDS = {
-        'test': 'sqlite://'
-    }
 
 
 class ProductionConfig(Config):
@@ -20,5 +17,6 @@ class DevelopmentConfig(Config):
 
 
 class TestingConfig(Config):
-    DEBUG = True
     TESTING = True
+    CSRF_ENABLED = False
+    DEBUG = False
