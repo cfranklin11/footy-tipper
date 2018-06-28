@@ -2,12 +2,6 @@
 # Using 3.4 for compatibility with version that Ubuntu installs with python3-dev
 FROM python:3.4
 
-# Set the working directory to /app
-WORKDIR /app
-
-# Copy the current directory contents into the container at /app
-ADD requirements.txt requirements.txt
-
 # Install python3 for use by Boost.Python library, PostGres Client, and Sqlite3 for testing
 RUN apt-get update && apt-get -y install postgresql-client python3-dev sqlite3 libsqlite3-dev
 
@@ -34,12 +28,12 @@ RUN wget https://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.
   && ./b2 install \
   && cd .. && rm -rf boost_1_65_0 && ldconfig
 
-# Install any needed packages specified in requirements.txt
-RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
-
 # Add our code
 ADD ./ /app
 WORKDIR /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip3 install --no-build-isolation --trusted-host pypi.python.org -r requirements.txt
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
