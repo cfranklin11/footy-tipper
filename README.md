@@ -1,4 +1,6 @@
-# README #
+# Footy Tipper
+
+An ensemble machine-learning model for predicting the outcomes of AFL matches.
 
 ## Setting up the app  in Docker
 * Run app only: `docker run -p 5000:5000 -e PORT=5000 <image-name>`
