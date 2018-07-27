@@ -25,6 +25,9 @@ xgboost==0.72
 
 seaborn==0.9
 matplotlib==2.0.2
+rpy
+tzlocal
+jupyter
 
 pytest==3.3.2
 pytest-env
